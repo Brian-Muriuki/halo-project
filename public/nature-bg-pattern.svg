@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <!-- Soft blue gradient background -->
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#bfdbfe" stop-opacity="0.3" />
+    </linearGradient>
+    
+    <!-- Cloud pattern -->
+    <pattern id="cloudPattern" x="0" y="0" width="300" height="200" patternUnits="userSpaceOnUse">
+      <!-- Cloud 1 -->
+      <path d="M 25 80 Q 40 50, 70 60 Q 90 30, 130 50 Q 150 30, 180 50 Q 200 40, 225 70 Q 240 80, 225 100 Q 230 120, 200 120 Q 180 140, 150 120 Q 130 140, 110 120 Q 90 130, 70 110 Q 50 120, 40 100 Q 20 95, 25 80" 
+            fill="white" fill-opacity="0.15" />
+      
+      <!-- Cloud 2 -->
+      <path d="M 180 170 Q 195 140, 225 150 Q 245 120, 285 140 Q 305 120, 335 140 Q 355 130, 380 160 Q 395 170, 380 190 Q 385 210, 355 210 Q 335 230, 305 210 Q 285 230, 265 210 Q 245 220, 225 200 Q 205 210, 195 190 Q 175 185, 180 170" 
+            fill="white" fill-opacity="0.1" transform="scale(0.8)" />
+    </pattern>
+    
+    <!-- Subtle leaf pattern -->
+    <pattern id="leafPattern" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <!-- Leaf 1 -->
+      <path d="M 50 50 C 70 20, 110 20, 100 50 C 120 40, 140 70, 100 90 C 80 100, 30 80, 50 50" 
+            fill="#3b82f6" fill-opacity="0.05" />
+      
+      <!-- Leaf 2 -->
+      <path d="M 150 150 C 170 120, 210 120, 200 150 C 220 140, 240 170, 200 190 C 180 200, 130 180, 150 150" 
+            fill="#1e3a8a" fill-opacity="0.05" transform="rotate(45, 180, 170)" />
+      
+      <!-- Leaf 3 -->
+      <path d="M 40 180 C 60 150, 100 150, 90 180 C 110 170, 130 200, 90 220 C 70 230, 20 210, 40 180" 
+            fill="#f59e0b" fill-opacity="0.05" transform="rotate(-30, 60, 190)" />
+    </pattern>
+  </defs>
+  
+  <!-- Background with gradient -->
+  <rect width="100%" height="100%" fill="url(#skyGradient)" />
+  
+  <!-- Cloud pattern overlay -->
+  <rect width="100%" height="100%" fill="url(#cloudPattern)" />
+  
+  <!-- Leaf pattern overlay -->
+  <rect width="100%" height="100%" fill="url(#leafPattern)" />
+  
+  <!-- Subtle horizontal lines for texture -->
+  <g stroke="#3b82f6" stroke-opacity="0.03" stroke-width="1">
+    <line x1="0" y1="100" x2="1000" y2="100" />
+    <line x1="0" y1="300" x2="1000" y2="300" />
+    <line x1="0" y1="500" x2="1000" y2="500" />
+    <line x1="0" y1="700" x2="1000" y2="700" />
+    <line x1="0" y1="900" x2="1000" y2="900" />
+  </g>
+</svg>
