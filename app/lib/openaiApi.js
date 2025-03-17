@@ -1,30 +1,89 @@
 // app/lib/openaiApi.js
 
-export const generateChatResponse = async (messages) => {
-   try {
-     const response = await fetch('/api/chat', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-       },
-       body: JSON.stringify({ messages }),
-     });
-     
-     if (!response.ok) {
-       const errorData = await response.json();
-       console.error('API error:', errorData);
-       
-       if (response.status === 429) {
-         return "I'm currently experiencing high demand. Please try again in a moment.";
-       }
-       
-       throw new Error(errorData.error || 'API request failed');
-     }
-     
-     const data = await response.json();
-     return data.response;
-   } catch (error) {
-     console.error('Error generating chat response:', error);
-     return "I'm having trouble connecting right now. Please try again in a moment.";
-   }
- };
+export const generateChatResponse = async (messages, userDenomination = 'non-denominational') => {
+  try {
+    // Add user denomination to help tailor the response
+    const userContextMessage = {
+      role: 'system',
+      content: `The user identifies with the ${userDenomination} Christian tradition. Keep this in mind when referencing Scripture or discussing theology.`
+    };
+    
+    // Include user context as first system message if not already provided
+    const hasSystemMessage = messages.some(msg => msg.role === 'system');
+    const messagesWithContext = hasSystemMessage 
+      ? messages 
+      : [userContextMessage, ...messages];
+    
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        messages: messagesWithContext,
+        userDenomination 
+      }),
+    });
+    
+    if (!response.ok) {
+      // Handle different error status codes
+      if (response.status === 429) {
+        return "I'm currently experiencing high demand. Please try again in a moment.";
+      }
+      
+      if (response.status === 400) {
+        return "I couldn't process that request. Please try rephrasing your message.";
+      }
+      
+      if (response.status === 500) {
+        return "I'm having trouble connecting to my knowledge base. Please try again shortly.";
+      }
+      
+      const errorData = await response.json();
+      console.error('API error:', errorData);
+      throw new Error(errorData.error || 'API request failed');
+    }
+    
+    const data = await response.json();
+    
+    // Store conversation in local storage for persistence between sessions
+    try {
+      const storedConversation = JSON.parse(localStorage.getItem('conversation') || '[]');
+      // Only store user messages and AI responses, not system messages
+      const userMessages = messages.filter(msg => msg.role !== 'system');
+      const updatedConversation = [...storedConversation, ...userMessages, { role: 'assistant', content: data.response }];
+      // Keep only last 20 messages to prevent localStorage from getting too large
+      const trimmedConversation = updatedConversation.slice(-20);
+      localStorage.setItem('conversation', JSON.stringify(trimmedConversation));
+    } catch (storageError) {
+      console.warn('Failed to store conversation in localStorage:', storageError);
+    }
+    
+    return data.response;
+  } catch (error) {
+    console.error('Error generating chat response:', error);
+    return "I'm having trouble connecting right now. Please try again in a moment.";
+  }
+};
+
+// Helper function to load conversation history
+export const loadConversationHistory = () => {
+  try {
+    const storedConversation = localStorage.getItem('conversation');
+    return storedConversation ? JSON.parse(storedConversation) : [];
+  } catch (error) {
+    console.error('Error loading conversation history:', error);
+    return [];
+  }
+};
+
+// Helper function to clear conversation history
+export const clearConversationHistory = () => {
+  try {
+    localStorage.removeItem('conversation');
+    return true;
+  } catch (error) {
+    console.error('Error clearing conversation history:', error);
+    return false;
+  }
+};

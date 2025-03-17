@@ -1,8 +1,10 @@
-// firebase.js
+// app/lib/firebase.js
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
+import { getStorage } from "firebase/storage";
+import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,11 +17,35 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-// Check if Firebase is already initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+let app;
+let analytics = null;
+let messaging = null;
+
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-const analytics = getAnalytics(app);
+const storage = getStorage(app);
 
-export { auth, db, app, analytics };
+// Only initialize analytics and messaging on client side
+if (typeof window !== 'undefined') {
+  // Initialize Analytics
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    console.error('Analytics initialization error:', error);
+  }
+  
+  // Initialize Messaging (for notifications)
+  try {
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.error('Messaging initialization error:', error);
+  }
+}
+
+export { auth, db, app, analytics, storage, messaging };
