@@ -1,0 +1,99 @@
+/* Auth component styles */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 180px);
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background-color: rgba(30, 41, 59, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.auth-title {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: var(--text-medium);
+  margin-bottom: 2rem;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-blue);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.auth-button:hover {
+  background-color: var(--secondary-blue);
+}
+
+.auth-links {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.forgot-password {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--accent-gold);
+}
+
+/* Password Strength Indicator */
+.password-strength-meter {
+  height: 4px;
+  width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+  background-color: #e5e7eb;
+  overflow: hidden;
+}
+
+.password-strength-meter div {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-weak {
+  width: 25%;
+  background-color: #ef4444;
+}
+
+.strength-fair {
+  width: 50%;
+  background-color: #f59e0b;
+}
+
+.strength-good {
+  width: 75%;
+  background-color: #3b82f6;
+}
+
+.strength-strong {
+  width: 100%;
+  background-color: #10b981;
+}
