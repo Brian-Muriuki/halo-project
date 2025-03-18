@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -48,9 +49,32 @@ Tailor your approach based on the user's identified tradition:
 - Evangelical: Emphasize personal relationship with Jesus and scriptural authority
 - Non-denominational: Balance perspectives with core biblical principles`;
 
+// CORS headers function
+const setCorsHeaders = (response) => {
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return response;
+};
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS() {
+  return setCorsHeaders(new NextResponse(null, { status: 204 }));
+}
+
 export async function POST(request) {
   try {
     const { messages, userDenomination = 'non-denominational' } = await request.json();
+    
+    // Validation
+    if (!messages || !Array.isArray(messages)) {
+      return setCorsHeaders(
+        NextResponse.json(
+          { error: 'Invalid request: messages should be an array' },
+          { status: 400 }
+        )
+      );
+    }
     
     // Add denomination-specific context if provided
     let contextualizedPrompt = CHRISTIAN_COMPANION_CONTEXT;
@@ -82,31 +106,39 @@ export async function POST(request) {
       console.log('AI Response:', aiResponse.substring(0, 100) + '...');
     }
     
-    return NextResponse.json({ 
-      response: aiResponse,
-      usage: completion.usage // Include token usage for monitoring
-    });
+    return setCorsHeaders(
+      NextResponse.json({ 
+        response: aiResponse,
+        usage: completion.usage // Include token usage for monitoring
+      })
+    );
   } catch (error) {
     console.error('Error generating chat response:', error);
     
     // Handle different types of errors with appropriate status codes
     if (error.status === 429) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again in a moment.' },
-        { status: 429 }
+      return setCorsHeaders(
+        NextResponse.json(
+          { error: 'Rate limit exceeded. Please try again in a moment.' },
+          { status: 429 }
+        )
       );
     }
     
     if (error.status === 400) {
-      return NextResponse.json(
-        { error: 'Invalid request format. Please check your input.' },
-        { status: 400 }
+      return setCorsHeaders(
+        NextResponse.json(
+          { error: 'Invalid request format. Please check your input.' },
+          { status: 400 }
+        )
       );
     }
     
-    return NextResponse.json(
-      { error: 'Failed to generate response: ' + (error.message || 'Unknown error') },
-      { status: 500 }
+    return setCorsHeaders(
+      NextResponse.json(
+        { error: 'Failed to generate response: ' + (error.message || 'Unknown error') },
+        { status: 500 }
+      )
     );
   }
 }

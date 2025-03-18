@@ -1,5 +1,4 @@
 // app/lib/openaiApi.js
-
 export const generateChatResponse = async (messages, userDenomination = 'non-denominational') => {
   try {
     // Add user denomination to help tailor the response
@@ -13,6 +12,11 @@ export const generateChatResponse = async (messages, userDenomination = 'non-den
     const messagesWithContext = hasSystemMessage 
       ? messages 
       : [userContextMessage, ...messages];
+    
+    // Input validation
+    if (!Array.isArray(messagesWithContext) || messagesWithContext.length === 0) {
+      throw new Error('Invalid messages format');
+    }
     
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -68,9 +72,21 @@ export const generateChatResponse = async (messages, userDenomination = 'non-den
 
 // Helper function to load conversation history
 export const loadConversationHistory = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  
   try {
     const storedConversation = localStorage.getItem('conversation');
-    return storedConversation ? JSON.parse(storedConversation) : [];
+    if (!storedConversation) return [];
+    
+    const parsedConversation = JSON.parse(storedConversation);
+    
+    // Convert the OpenAI API message format to our app's message format
+    return parsedConversation.map(msg => ({
+      text: msg.content,
+      sender: msg.role === 'user' ? 'user' : 'ai'
+    }));
   } catch (error) {
     console.error('Error loading conversation history:', error);
     return [];
@@ -79,6 +95,10 @@ export const loadConversationHistory = () => {
 
 // Helper function to clear conversation history
 export const clearConversationHistory = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  
   try {
     localStorage.removeItem('conversation');
     return true;

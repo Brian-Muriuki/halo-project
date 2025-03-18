@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,27 +12,63 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async () => {
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateForm = () => {
+    // Reset previous errors
+    setError('');
+    
+    // Check if fields are empty
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      return false;
+    }
+    
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    
+    // Basic password validation - just checking length for now
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
-      setError('');
       setLoading(true);
-      
-      // Validation
-      if (!email || !password) {
-        setError('Please enter both email and password');
-        setLoading(false);
-        return;
-      }
       
       // Dynamically import firebase/auth
       const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
       const auth = getAuth();
       await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login successful!');
+      
       router.push('/');
     } catch (error) {
-      console.error('Login error:', error.message);
-      setError(error.message || 'Failed to login. Please try again.');
+      console.error('Login error:', error);
+      
+      // User-friendly error messages
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setError('Invalid email or password');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Too many failed login attempts. Please try again later');
+      } else if (error.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection');
+      } else {
+        setError(error.message || 'Failed to login. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -43,41 +80,50 @@ const Login = () => {
         <h1 className="auth-title">Welcome Back</h1>
         <p className="auth-subtitle">Sign in to continue your spiritual journey</p>
         
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert">{error}</div>}
         
-        <div className="input-group">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        
-        <div className="input-group">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        
-        <button 
-          className="auth-button"
-          onClick={handleLogin}
-          disabled={loading}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
+        <form onSubmit={handleLogin}>
+          <div className="input-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+              minLength={6}
+            />
+          </div>
+          
+          <button 
+            type="submit"
+            className="auth-button"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
         
         <div className="auth-links">
-          <p>Don't have an account? <a href="/auth/signup">Sign up</a></p>
-          <a href="#" className="forgot-password">Forgot password?</a>
+          <p>Don't have an account? <Link href="/auth/signup">Sign up</Link></p>
+          <Link href="/auth/reset-password" className="forgot-password">Forgot password?</Link>
         </div>
       </div>
     </div>

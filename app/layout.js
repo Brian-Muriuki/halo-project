@@ -2,6 +2,7 @@
 import Navbar from './components/Navbar';
 import './globals.css';
 import { Inter, Lora, Open_Sans } from 'next/font/google';
+import { AuthProvider } from './context/AuthContext';
 
 // Define fonts
 const lora = Lora({ 
@@ -27,17 +28,19 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${lora.variable} ${openSans.variable}`}>
       <body>
-        <div className="page-container">
-          <Navbar />
-          <main className="main-content">
-            {children}
-          </main>
-          <footer className="site-footer">
-            <div className="container">
-              <p>Halo - Your companion for spiritual growth</p>
-            </div>
-          </footer>
-        </div>
+        <AuthProvider>
+          <div className="page-container">
+            <Navbar />
+            <main className="main-content">
+              {children}
+            </main>
+            <footer className="site-footer">
+              <div className="container">
+                <p>Halo - Your companion for spiritual growth</p>
+              </div>
+            </footer>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

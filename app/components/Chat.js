@@ -1,10 +1,9 @@
+// app/components/Chat.js
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { generateChatResponse, loadConversationHistory } from '../lib/openaiApi';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 
@@ -13,8 +12,7 @@ const Chat = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState(null);
-  const [userDenomination, setUserDenomination] = useState('non-denominational');
+  const { currentUser, userProfile } = useAuth();
   const chatContainerRef = useRef(null);
   
   // This useEffect ensures this component only renders fully on the client
@@ -26,30 +24,6 @@ const Chat = () => {
     if (history.length > 0) {
       setMessages(history);
     }
-    
-    // Check authentication state
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        
-        // Fetch user profile from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserDenomination(userData.denomination || 'non-denominational');
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      } else {
-        setUser(null);
-      }
-    });
-    
-    // Clean up subscription
-    return () => unsubscribe();
   }, []);
 
   // Scroll to bottom when messages change
@@ -76,6 +50,9 @@ const Chat = () => {
       
       // Add the new user message
       apiMessages.push({ role: 'user', content: input });
+      
+      // Get user denomination from profile if available
+      const userDenomination = userProfile?.denomination || 'non-denominational';
       
       const response = await generateChatResponse(apiMessages, userDenomination);
 
@@ -184,6 +161,7 @@ const Chat = () => {
           onClick={handleSendMessage}
           disabled={isLoading || !input.trim()}
           className="send-button"
+          aria-label="Send message"
         >
           {isLoading ? 'Sending...' : 'Send'}
         </button>
