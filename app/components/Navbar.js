@@ -5,6 +5,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/app/context/AuthContext';
+import { auth } from '@/app/lib/firebase';
+import { signOut } from 'firebase/auth';
+
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -17,8 +20,6 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     try {
-      const { signOut } = await import('firebase/auth');
-      const { auth } = await import('@/app/lib/firebase');
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);

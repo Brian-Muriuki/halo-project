@@ -4,6 +4,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { auth } from '@/app/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -50,9 +52,7 @@ const Login = () => {
     try {
       setLoading(true);
       
-      // Dynamically import firebase/auth
-      const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
-      const auth = getAuth();
+      // Use the imported auth instance and signInWithEmailAndPassword function
       await signInWithEmailAndPassword(auth, email, password);
       
       router.push('/');

@@ -4,6 +4,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { auth, db } from '@/app/lib/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -84,13 +87,6 @@ const Signup = () => {
         setLoading(false);
         return;
       }
-
-      // Dynamically import firebase
-      const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
-      const { doc, setDoc, getFirestore } = await import('firebase/firestore');
-      
-      const auth = getAuth();
-      const db = getFirestore();
       
       // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
