@@ -32,26 +32,55 @@ const Signup = () => {
     'other'
   ];
 
-  const handleSignup = async () => {
+  // Improved validation function
+  const validateForm = () => {
+    // Reset error
+    setError('');
+    
+    // Name validation
+    if (!name.trim()) {
+      setError('Please enter your name');
+      return false;
+    }
+    
+    // Email validation with regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    
+    // Password validation
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    // Password strength check
+    const passwordStrengthRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/;
+    if (!passwordStrengthRegex.test(password)) {
+      setError('Password must contain at least one letter and one number');
+      return false;
+    }
+    
+    // Confirm password
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSignup = async (e) => {
+    if (e) e.preventDefault();
+    
     try {
       setError('');
       setLoading(true);
       
-      // Validation
-      if (!email || !password || !name) {
-        setError('Please fill in all required fields');
-        setLoading(false);
-        return;
-      }
-      
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        setLoading(false);
-        return;
-      }
-      
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
+      // Validate form
+      if (!validateForm()) {
         setLoading(false);
         return;
       }
@@ -98,6 +127,8 @@ const Signup = () => {
         setError('Please enter a valid email address');
       } else if (error.code === 'auth/weak-password') {
         setError('Please choose a stronger password');
+      } else if (error.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
       } else {
         setError(error.message || 'Failed to create account. Please try again.');
       }
@@ -112,75 +143,92 @@ const Signup = () => {
         <h1 className="auth-title">Create Account</h1>
         <p className="auth-subtitle">Join Halo on your spiritual journey</p>
         
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert">{error}</div>}
         
-        <div className="input-group">
-          <label htmlFor="name">Full Name</label>
-          <input
-            id="name"
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        
-        <div className="input-group">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        
-        <div className="input-group">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        
-        <div className="input-group">
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-        
-        <div className="input-group">
-          <label htmlFor="denomination">Faith Tradition (Optional)</label>
-          <select
-            id="denomination"
-            value={denomination}
-            onChange={(e) => setDenomination(e.target.value)}
+        <form onSubmit={handleSignup}>
+          <div className="input-group">
+            <label htmlFor="name">Full Name</label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+              minLength={6}
+            />
+            <small>Must be at least 6 characters with letters and numbers</small>
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="denomination">Faith Tradition (Optional)</label>
+            <select
+              id="denomination"
+              value={denomination}
+              onChange={(e) => setDenomination(e.target.value)}
+              disabled={loading}
+            >
+              {denominations.map((denom) => (
+                <option key={denom} value={denom}>
+                  {denom.charAt(0).toUpperCase() + denom.slice(1)}
+                </option>
+              ))}
+            </select>
+            <small>This helps us personalize your experience</small>
+          </div>
+          
+          <button 
+            type="submit"
+            className="auth-button"
+            disabled={loading}
           >
-            {denominations.map((denom) => (
-              <option key={denom} value={denom}>
-                {denom.charAt(0).toUpperCase() + denom.slice(1)}
-              </option>
-            ))}
-          </select>
-          <small>This helps us personalize your experience</small>
-        </div>
-        
-        <button 
-          className="auth-button"
-          onClick={handleSignup}
-          disabled={loading}
-        >
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </button>
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </button>
+        </form>
         
         <div className="auth-links">
           <p>Already have an account? <Link href="/auth/login">Sign in</Link></p>
