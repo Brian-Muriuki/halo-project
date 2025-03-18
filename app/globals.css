@@ -772,4 +772,272 @@ input:focus, textarea:focus, select:focus {
 
 @media (prefers-color-scheme: dark) {
   .site-footer {
-    backgroun
+    background-color: rgba(30, 58, 138, 0.9);
+  }
+}
+
+/* Bible Verses Styling */
+.scripture {
+  font-style: italic;
+  padding: 1rem;
+  border-left: 3px solid var(--accent-gold);
+  margin: 1rem 0;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .scripture {
+    background-color: rgba(30, 41, 59, 0.5);
+  }
+}
+
+.scripture-reference {
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: 0.5rem;
+}
+
+/* Bible verse links */
+.verse-reference {
+  color: var(--accent-gold);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.verse-reference:hover {
+  text-decoration: underline;
+  color: var(--accent-amber);
+}
+
+/* Media Queries for Responsive Design */
+@media (max-width: 768px) {
+  .desktop-menu {
+    display: none;
+  }
+  
+  .mobile-menu-toggle {
+    display: flex;
+  }
+  
+  .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+  }
+  
+  .mobile-menu .nav-item {
+    margin-bottom: 1rem;
+    width: 100%;
+    text-align: center;
+  }
+  
+  .welcome-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-section {
+    gap: 2rem;
+  }
+  
+  .chat-container {
+    height: calc(100vh - 250px);
+  }
+}
+
+@media (max-width: 640px) {
+  .welcome-title {
+    font-size: 2rem;
+  }
+  
+  .welcome-description {
+    font-size: 1rem;
+  }
+  
+  .features {
+    gap: 1rem;
+  }
+  
+  .feature {
+    padding: 1rem;
+  }
+  
+  .auth-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Loading States */
+.chat-container-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+  color: var(--text-medium);
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-container-loading {
+    background-color: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.message.ai.loading {
+  max-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Accessibility Improvements */
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--secondary-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Night mode toggle button */
+.theme-toggle {
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--background-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-toggle {
+    background-color: var(--primary-blue);
+  }
+}
+
+.theme-toggle-icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+  transform: rotate(45deg);
+}
+
+/* Markdown content from ReactMarkdown component */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid var(--accent-gold);
+  padding-left: 1rem;
+  margin-left: 0;
+  color: var(--text-medium);
+  font-style: italic;
+}
+
+.markdown-content pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .markdown-content pre {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Custom scrollbar for better readability */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-medium);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-blue);
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--light-blue);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-blue);
+  }
+}
+
+/* Print styles for clean printing */
+@media print {
+  body {
+    background: white;
+    font-size: 12pt;
+    color: black;
+  }
+  
+  .navbar, .site-footer, .theme-toggle {
+    display: none;
+  }
+  
+  .chat-container {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .message {
+    break-inside: avoid;
+    border: 1px solid #ddd;
+    box-shadow: none;
+  }
+}
