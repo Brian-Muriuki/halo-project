@@ -12,8 +12,13 @@ const Chat = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [inputError, setInputError] = useState('');
+  const [characterCount, setCharacterCount] = useState(0);
   const { currentUser, userProfile } = useAuth();
   const chatContainerRef = useRef(null);
+  const textareaRef = useRef(null);
+  
+  const MAX_INPUT_LENGTH = 500; // Maximum characters allowed
   
   // This useEffect ensures this component only renders fully on the client
   useEffect(() => {
@@ -32,14 +37,72 @@ const Chat = () => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+  
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto to correctly calculate scrollHeight
+      textareaRef.current.style.height = 'auto';
+      // Set height to scrollHeight to fit content
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+    
+    // Update character count
+    setCharacterCount(input.length);
+    
+    // Validate input length
+    if (input.length > MAX_INPUT_LENGTH) {
+      setInputError(`Message is too long. Maximum ${MAX_INPUT_LENGTH} characters allowed.`);
+    } else {
+      setInputError('');
+    }
+  }, [input]);
+
+  const validateInput = (text) => {
+    if (!text || !text.trim()) {
+      setInputError('Please enter a message');
+      return false;
+    }
+    
+    if (text.length > MAX_INPUT_LENGTH) {
+      setInputError(`Message is too long. Maximum ${MAX_INPUT_LENGTH} characters allowed.`);
+      return false;
+    }
+    
+    // Check for potentially harmful or inappropriate content
+    // This is a basic check - you might want to use more sophisticated methods
+    const potentiallyHarmfulPatterns = [
+      /<script/i,
+      /DROP TABLE/i,
+      /DELETE FROM/i,
+      /;shutdown/i
+    ];
+    
+    for (const pattern of potentiallyHarmfulPatterns) {
+      if (pattern.test(text)) {
+        setInputError('Your message contains potentially harmful content');
+        return false;
+      }
+    }
+    
+    setInputError('');
+    return true;
+  };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    // Don't send if already loading or input is invalid
+    if (isLoading || !validateInput(input)) return;
 
     const userMessage = { text: input, sender: 'user' };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
     setIsLoading(true);
+    setCharacterCount(0);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     try {
       // Convert messages to the format expected by the OpenAI API
@@ -76,6 +139,11 @@ const Chat = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+  
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    setInput(text);
   };
   
   // Function to render message content with markdown
@@ -148,18 +216,35 @@ const Chat = () => {
         )}
       </div>
       <div className="chat-input">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message..."
-          disabled={isLoading}
-          rows={1}
-          className="resize-none"
-        />
+        <div className="textarea-container">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message..."
+            disabled={isLoading}
+            rows={1}
+            className={`resize-none ${inputError && input ? 'input-error' : ''}`}
+            aria-invalid={!!inputError}
+            aria-describedby={inputError ? "input-error" : undefined}
+            maxLength={MAX_INPUT_LENGTH + 50} // Allow some buffer beyond the limit
+          />
+          <div className="textarea-footer">
+            {inputError && input ? (
+              <span className="field-error-message" id="input-error" role="alert">
+                {inputError}
+              </span>
+            ) : (
+              <span className={`character-count ${characterCount > MAX_INPUT_LENGTH ? 'text-error' : ''}`}>
+                {characterCount}/{MAX_INPUT_LENGTH}
+              </span>
+            )}
+          </div>
+        </div>
         <button 
           onClick={handleSendMessage}
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || !!inputError}
           className="send-button"
           aria-label="Send message"
         >
