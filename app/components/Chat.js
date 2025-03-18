@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { generateChatResponse, loadConversationHistory } from '../lib/openaiApi';
-import { useAuth } from '../context/AuthContext';
+import { generateChatResponse, loadConversationHistory } from '@/app/lib/openaiApi';
+import { useAuth } from '@/app/context/AuthContext';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 

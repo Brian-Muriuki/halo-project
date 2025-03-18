@@ -1,8 +1,8 @@
 // app/layout.js
-import Navbar from './components/Navbar';
+import Navbar from '@/app/components/Navbar';
 import './globals.css';
 import { Inter, Lora, Open_Sans } from 'next/font/google';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from '@/app/context/AuthContext';
 
 // Define fonts
 const lora = Lora({ 

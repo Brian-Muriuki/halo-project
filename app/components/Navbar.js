@@ -4,8 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '../context/AuthContext';
-
+import { useAuth } from '@/app/context/AuthContext';
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -19,7 +18,7 @@ const Navbar = () => {
   const handleSignOut = async () => {
     try {
       const { signOut } = await import('firebase/auth');
-      const { auth } = await import('../lib/firebase');
+      const { auth } = await import('@/app/lib/firebase');
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);
@@ -94,9 +93,9 @@ const Navbar = () => {
           </button>
         )}
 
-        {/* Mobile Navigation - Only shown when mounted and menu is open */}
-        {mounted && isMobileMenuOpen && (
-          <ul className="nav-menu mobile-menu">
+        {/* Mobile Navigation - Always render when mounted, but control visibility with CSS */}
+        {mounted && (
+          <ul className={`nav-menu mobile-menu ${isMobileMenuOpen ? 'mobile-menu-visible' : 'mobile-menu-hidden'}`}>
             <li className="nav-item">
               <Link 
                 href="/" 
