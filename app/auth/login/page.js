@@ -1,7 +1,7 @@
 // app/auth/login/page.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/app/lib/firebase';
@@ -11,35 +11,81 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({
+    email: '',
+    password: '',
+  });
   const [loading, setLoading] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
   const router = useRouter();
 
-  // Email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Email validation regex - more comprehensive
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  // Real-time validation as user types
+  useEffect(() => {
+    if (formTouched) {
+      validateField('email', email);
+      validateField('password', password);
+    }
+  }, [email, password, formTouched]);
+
+  const validateField = (field, value) => {
+    let newFieldErrors = { ...fieldErrors };
+    
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          newFieldErrors.email = 'Email is required';
+        } else if (!emailRegex.test(value)) {
+          newFieldErrors.email = 'Please enter a valid email address';
+        } else {
+          newFieldErrors.email = '';
+        }
+        break;
+      case 'password':
+        if (!value.trim()) {
+          newFieldErrors.password = 'Password is required';
+        } else if (value.length < 6) {
+          newFieldErrors.password = 'Password must be at least 6 characters';
+        } else {
+          newFieldErrors.password = '';
+        }
+        break;
+      default:
+        break;
+    }
+    
+    setFieldErrors(newFieldErrors);
+    return !newFieldErrors[field]; // Return true if valid
+  };
 
   const validateForm = () => {
     // Reset previous errors
     setError('');
     
-    // Check if fields are empty
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password');
-      return false;
+    // Validate all fields
+    const isEmailValid = validateField('email', email);
+    const isPasswordValid = validateField('password', password);
+    
+    return isEmailValid && isPasswordValid;
+  };
+
+  const handleFieldChange = (field, value) => {
+    if (!formTouched) {
+      setFormTouched(true);
     }
     
-    // Validate email format
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return false;
+    switch (field) {
+      case 'email':
+        setEmail(value);
+        break;
+      case 'password':
+        setPassword(value);
+        break;
+      default:
+        break;
     }
-    
-    // Basic password validation - just checking length for now
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return false;
-    }
-    
-    return true;
   };
 
   const handleLogin = async (e) => {
@@ -66,6 +112,10 @@ const Login = () => {
         setError('Too many failed login attempts. Please try again later');
       } else if (error.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection');
+      } else if (error.code === 'auth/invalid-credential') {
+        setError('Invalid login credentials. Please check your email and password');
+      } else if (error.code === 'auth/user-disabled') {
+        setError('This account has been disabled. Please contact support');
       } else {
         setError(error.message || 'Failed to login. Please try again.');
       }
@@ -82,7 +132,7 @@ const Login = () => {
         
         {error && <div className="error-message" role="alert">{error}</div>}
         
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} noValidate>
           <div className="input-group">
             <label htmlFor="email">Email</label>
             <input
@@ -90,11 +140,20 @@ const Login = () => {
               type="email"
               placeholder="your@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleFieldChange('email', e.target.value)}
+              onBlur={() => validateField('email', email)}
               required
               aria-required="true"
               disabled={loading}
+              className={fieldErrors.email ? 'input-error' : ''}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
             />
+            {fieldErrors.email && (
+              <div className="field-error-message" id="email-error" role="alert">
+                {fieldErrors.email}
+              </div>
+            )}
           </div>
           
           <div className="input-group">
@@ -104,18 +163,27 @@ const Login = () => {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => handleFieldChange('password', e.target.value)}
+              onBlur={() => validateField('password', password)}
               required
               aria-required="true"
               disabled={loading}
               minLength={6}
+              className={fieldErrors.password ? 'input-error' : ''}
+              aria-invalid={!!fieldErrors.password}
+              aria-describedby={fieldErrors.password ? "password-error" : undefined}
             />
+            {fieldErrors.password && (
+              <div className="field-error-message" id="password-error" role="alert">
+                {fieldErrors.password}
+              </div>
+            )}
           </div>
           
           <button 
             type="submit"
             className="auth-button"
-            disabled={loading}
+            disabled={loading || (formTouched && (!!fieldErrors.email || !!fieldErrors.password))}
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
