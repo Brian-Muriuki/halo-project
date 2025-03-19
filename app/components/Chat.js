@@ -2,8 +2,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { generateChatResponse, loadConversationHistory } from '@/app/lib/openaiApi';
+import { generateChatResponse, loadConversationHistory, clearConversationHistory } from '@/app/lib/openaiApi';
 import { useAuth } from '@/app/context/AuthContext';
+import { useToast } from '@/app/context/ToastContext';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import styles from '@/app/styles/chat.module.css';
@@ -16,6 +17,7 @@ const Chat = () => {
   const [inputError, setInputError] = useState('');
   const [characterCount, setCharacterCount] = useState(0);
   const { currentUser, userProfile } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const chatContainerRef = useRef(null);
   const textareaRef = useRef(null);
   
@@ -29,6 +31,7 @@ const Chat = () => {
     const history = loadConversationHistory();
     if (history.length > 0) {
       setMessages(history);
+      showInfo('Previous conversation loaded', 2000);
     }
   }, []);
 
@@ -67,6 +70,7 @@ const Chat = () => {
     
     if (text.length > MAX_INPUT_LENGTH) {
       setInputError(`Message is too long. Maximum ${MAX_INPUT_LENGTH} characters allowed.`);
+      showError(`Message exceeded ${MAX_INPUT_LENGTH} character limit`);
       return false;
     }
     
@@ -82,6 +86,7 @@ const Chat = () => {
     for (const pattern of potentiallyHarmfulPatterns) {
       if (pattern.test(text)) {
         setInputError('Your message contains potentially harmful content');
+        showError('Message contains potentially harmful content');
         return false;
       }
     }
@@ -123,6 +128,11 @@ const Chat = () => {
       if (response) {
         const aiMessage = { text: response, sender: 'ai' };
         setMessages((prevMessages) => [...prevMessages, aiMessage]);
+        
+        // Show success toast for first response if new conversation
+        if (messages.length === 0) {
+          showSuccess('Conversation started successfully!');
+        }
       }
     } catch (error) {
       console.error('Error processing chat response:', error);
@@ -130,6 +140,7 @@ const Chat = () => {
         ...prevMessages,
         { text: "Sorry, I'm having trouble responding right now. Please try again later.", sender: 'ai' }
       ]);
+      showError('Failed to get response. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -145,6 +156,17 @@ const Chat = () => {
   const handleInputChange = (e) => {
     const text = e.target.value;
     setInput(text);
+  };
+  
+  const handleClearConversation = () => {
+    if (messages.length === 0) return;
+    
+    if (clearConversationHistory()) {
+      setMessages([]);
+      showInfo('Conversation cleared', 3000);
+    } else {
+      showError('Failed to clear conversation');
+    }
   };
   
   // Function to render message content with markdown
@@ -178,6 +200,18 @@ const Chat = () => {
 
   return (
     <div className={styles['chat-container']}>
+      <div className={styles['chat-header']}>
+        <h3 className={styles['chat-title']}>Spiritual Companion</h3>
+        {messages.length > 0 && (
+          <button 
+            onClick={handleClearConversation} 
+            className={styles['clear-button']}
+            aria-label="Clear conversation"
+          >
+            Clear
+          </button>
+        )}
+      </div>
       <div className={styles['chat-messages']} ref={chatContainerRef}>
         {messages.length === 0 ? (
           <div className={styles['empty-chat']}>
