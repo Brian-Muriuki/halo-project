@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/app/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import styles from '@/app/styles/auth.module.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ const Login = () => {
   const router = useRouter();
 
   // Email validation regex - more comprehensive
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
 
   // Real-time validation as user types
   useEffect(() => {
@@ -125,10 +126,10 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="auth-title">Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to continue your spiritual journey</p>
+    <div className={styles['auth-container']}>
+      <div className={styles['auth-card']}>
+        <h1 className={styles['auth-title']}>Welcome Back</h1>
+        <p className={styles['auth-subtitle']}>Sign in to continue your spiritual journey</p>
         
         {error && <div className="error-message" role="alert">{error}</div>}
         
@@ -182,16 +183,16 @@ const Login = () => {
           
           <button 
             type="submit"
-            className="auth-button"
+            className={styles['auth-button']}
             disabled={loading || (formTouched && (!!fieldErrors.email || !!fieldErrors.password))}
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
         
-        <div className="auth-links">
+        <div className={styles['auth-links']}>
           <p>Don't have an account? <Link href="/auth/signup">Sign up</Link></p>
-          <Link href="/auth/reset-password" className="forgot-password">Forgot password?</Link>
+          <Link href="/auth/reset-password" className={styles['forgot-password']}>Forgot password?</Link>
         </div>
       </div>
     </div>
