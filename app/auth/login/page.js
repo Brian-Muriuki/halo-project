@@ -4,8 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/app/lib/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import styles from '@/app/styles/auth.module.css';
 import { useToast } from '@/app/context/ToastContext';
 import FormFeedback from '@/app/components/FormFeedback';
@@ -21,8 +19,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState(null);
+  const [lockoutTime, setLockoutTime] = useState(null);
   const router = useRouter();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
 
   // Email validation regex - more comprehensive
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -34,6 +34,13 @@ const Login = () => {
       validateField('password', password);
     }
   }, [email, password, formTouched]);
+
+  // Show remaining attempts warning if applicable
+  useEffect(() => {
+    if (remainingAttempts !== null && remainingAttempts > 0 && remainingAttempts <= 3) {
+      showWarning(`${remainingAttempts} login ${remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining`, 5000);
+    }
+  }, [remainingAttempts, showWarning]);
 
   const validateField = (field, value) => {
     let newFieldErrors = { ...fieldErrors };
@@ -66,6 +73,13 @@ const Login = () => {
   };
 
   const validateForm = () => {
+    // Check if account is locked
+    if (lockoutTime && new Date(lockoutTime) > new Date()) {
+      const minutesLeft = Math.round((new Date(lockoutTime) - new Date()) / 1000 / 60);
+      setError(`Too many failed login attempts. Please try again in ${minutesLeft} minutes.`);
+      return false;
+    }
+    
     // Reset previous errors
     setError('');
     setFormSuccess(false);
@@ -109,8 +123,35 @@ const Login = () => {
     try {
       setLoading(true);
       
-      // Use the imported auth instance and signInWithEmailAndPassword function
-      await signInWithEmailAndPassword(auth, email, password);
+      // Use our API route with rate limiting
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // Handle API errors
+        if (response.status === 429) {
+          // Rate limit exceeded
+          setLockoutTime(data.lockedUntil);
+          showError(data.error);
+        } else if (response.status === 401) {
+          // Invalid credentials
+          setRemainingAttempts(data.remainingAttempts);
+          showError(data.error);
+        } else {
+          // Other errors
+          showError(data.error || 'An error occurred during login');
+        }
+        
+        setError(data.error || 'Failed to login. Please try again.');
+        return;
+      }
       
       // Show success feedback
       setFormSuccess(true);
@@ -123,27 +164,8 @@ const Login = () => {
       
     } catch (error) {
       console.error('Login error:', error);
-      
-      // User-friendly error messages
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        setError('Invalid email or password');
-        showError('Login failed: Invalid email or password');
-      } else if (error.code === 'auth/too-many-requests') {
-        setError('Too many failed login attempts. Please try again later');
-        showError('Login failed: Too many attempts');
-      } else if (error.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection');
-        showError('Login failed: Network error');
-      } else if (error.code === 'auth/invalid-credential') {
-        setError('Invalid login credentials. Please check your email and password');
-        showError('Login failed: Invalid credentials');
-      } else if (error.code === 'auth/user-disabled') {
-        setError('This account has been disabled. Please contact support');
-        showError('Login failed: Account disabled');
-      } else {
-        setError(error.message || 'Failed to login. Please try again.');
-        showError('Login failed. Please try again.');
-      }
+      setError('Network error. Please check your connection and try again.');
+      showError('Login failed: Network error');
     } finally {
       setLoading(false);
     }
@@ -162,6 +184,13 @@ const Login = () => {
           errorMessage={error}
         />
         
+        {lockoutTime && new Date(lockoutTime) > new Date() && (
+          <div className={styles['lockout-message']}>
+            <p>Your account is temporarily locked due to too many failed login attempts.</p>
+            <p>Please try again in {Math.round((new Date(lockoutTime) - new Date()) / 1000 / 60)} minutes.</p>
+          </div>
+        )}
+        
         <form onSubmit={handleLogin} noValidate>
           <div className="input-group">
             <label htmlFor="email">Email</label>
@@ -174,7 +203,7 @@ const Login = () => {
               onBlur={() => validateField('email', email)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || (lockoutTime && new Date(lockoutTime) > new Date())}
               className={fieldErrors.email ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
@@ -197,7 +226,7 @@ const Login = () => {
               onBlur={() => validateField('password', password)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || (lockoutTime && new Date(lockoutTime) > new Date())}
               minLength={6}
               className={fieldErrors.password ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.password}
@@ -213,7 +242,11 @@ const Login = () => {
           <button 
             type="submit"
             className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
-            disabled={loading || (formTouched && (!!fieldErrors.email || !!fieldErrors.password))}
+            disabled={
+              loading || 
+              (formTouched && (!!fieldErrors.email || !!fieldErrors.password)) ||
+              (lockoutTime && new Date(lockoutTime) > new Date())
+            }
           >
             {loading ? 'Signing in...' : formSuccess ? 'Success!' : 'Sign In'}
           </button>
