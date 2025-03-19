@@ -1,293 +1,246 @@
 // app/auth/login/page.js
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import styles from '@/app/styles/auth.module.css';
 import { useToast } from '@/app/context/ToastContext';
-import { useCsrf } from '@/app/context/CsrfContext';
+import { validateLogin } from '@/app/utils/validateForms';
 import FormFeedback from '@/app/components/FormFeedback';
+import styles from '../auth.module.css';
 
+/**
+ * Login Component - Handles user authentication via email and password
+ * Implements accessibility features, form validation, and error handling
+ */
 const Login = () => {
+  // State for form inputs and UI state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({
-    email: '',
-    password: '',
-  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [formTouched, setFormTouched] = useState(false);
-  const [formSuccess, setFormSuccess] = useState(false);
-  const [remainingAttempts, setRemainingAttempts] = useState(null);
-  const [lockoutTime, setLockoutTime] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [csrfToken, setCsrfToken] = useState('');
+  
+  // Refs for accessibility and focus management
+  const emailInputRef = useRef(null);
+  const errorRef = useRef(null);
+  
+  // Hooks
   const router = useRouter();
-  const { showSuccess, showError, showWarning } = useToast();
-  const { csrfToken, withCsrf, csrfHeader, loading: csrfLoading } = useCsrf();
+  const { showToast } = useToast();
 
-  // Email validation regex - more comprehensive
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-  // Real-time validation as user types
+  // Fetch CSRF token on component mount
   useEffect(() => {
-    if (formTouched) {
-      validateField('email', email);
-      validateField('password', password);
-    }
-  }, [email, password, formTouched]);
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await fetch('/api/auth/csrf');
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+      } catch (error) {
+        console.error('Error fetching CSRF token:', error);
+      }
+    };
 
-  // Show remaining attempts warning if applicable
+    fetchCsrfToken();
+    
+    // Focus the email input when component mounts for better user experience
+    if (emailInputRef.current) {
+      emailInputRef.current.focus();
+    }
+  }, []);
+  
+  // Focus on error message when errors are present for screen readers
   useEffect(() => {
-    if (remainingAttempts !== null && remainingAttempts > 0 && remainingAttempts <= 3) {
-      showWarning(`${remainingAttempts} login ${remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining`, 5000);
+    if (Object.keys(errors).length > 0 && errorRef.current) {
+      errorRef.current.focus();
     }
-  }, [remainingAttempts, showWarning]);
+  }, [errors]);
 
-  const validateField = (field, value) => {
-    let newFieldErrors = { ...fieldErrors };
-    
-    switch (field) {
-      case 'email':
-        if (!value.trim()) {
-          newFieldErrors.email = 'Email is required';
-        } else if (!emailRegex.test(value)) {
-          newFieldErrors.email = 'Please enter a valid email address';
-        } else {
-          newFieldErrors.email = '';
-        }
-        break;
-      case 'password':
-        if (!value.trim()) {
-          newFieldErrors.password = 'Password is required';
-        } else if (value.length < 6) {
-          newFieldErrors.password = 'Password must be at least 6 characters';
-        } else {
-          newFieldErrors.password = '';
-        }
-        break;
-      default:
-        break;
-    }
-    
-    setFieldErrors(newFieldErrors);
-    return !newFieldErrors[field]; // Return true if valid
-  };
-
+  /**
+   * Validates form input before submission
+   * @returns {boolean} Whether the form is valid
+   */
   const validateForm = () => {
-    // Check if account is locked
-    if (lockoutTime && new Date(lockoutTime) > new Date()) {
-      const minutesLeft = Math.round((new Date(lockoutTime) - new Date()) / 1000 / 60);
-      setError(`Too many failed login attempts. Please try again in ${minutesLeft} minutes.`);
+    // Clear previous errors
+    setErrors({});
+    
+    const validationResult = validateLogin(email, password);
+    
+    if (!validationResult.isValid) {
+      setErrors(validationResult.errors);
       return false;
     }
     
-    // Reset previous errors
-    setError('');
-    setFormSuccess(false);
-    
-    // Validate all fields
-    const isEmailValid = validateField('email', email);
-    const isPasswordValid = validateField('password', password);
-    
-    return isEmailValid && isPasswordValid;
+    return true;
   };
 
-  const handleFieldChange = (field, value) => {
-    if (!formTouched) {
-      setFormTouched(true);
-    }
-    
-    // Clear success state when form is edited
-    if (formSuccess) {
-      setFormSuccess(false);
-    }
-    
-    switch (field) {
-      case 'email':
-        setEmail(value);
-        break;
-      case 'password':
-        setPassword(value);
-        break;
-      default:
-        break;
-    }
-  };
-
+  /**
+   * Handles the login submission process
+   * Validates inputs, makes API request, and handles the response
+   * @param {Event} e - The form submission event
+   */
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    if (!validateForm() || csrfLoading) {
+    if (!validateForm()) {
       return;
     }
     
     try {
       setLoading(true);
       
-      // Use our API route with rate limiting and CSRF protection
+      // Call the login API endpoint with CSRF protection
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken
         },
-        credentials: 'include', // Include cookies in the request
-        body: JSON.stringify(withCsrf({ 
-          email, 
-          password
-        })),
+        body: JSON.stringify({ email, password }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        // Handle API errors
-        if (response.status === 403) {
-          // CSRF validation failed
-          showError('Security validation failed. Please refresh the page and try again.');
-          setError('Security validation failed. Please refresh the page and try again.');
-        } else if (response.status === 429) {
-          // Rate limit exceeded
-          setLockoutTime(data.lockedUntil);
-          showError(data.error);
-        } else if (response.status === 401) {
-          // Invalid credentials
-          setRemainingAttempts(data.remainingAttempts);
-          showError(data.error);
-        } else {
-          // Other errors
-          showError(data.error || 'An error occurred during login');
-        }
-        
-        setError(data.error || 'Failed to login. Please try again.');
-        return;
+        throw new Error(data.message || 'Login failed');
       }
       
-      // Show success feedback
-      setFormSuccess(true);
-      showSuccess('Login successful! Redirecting...');
+      // Show success feedback before redirecting
+      setShowSuccess(true);
+      showToast('Login successful!', 'success');
       
-      // Store new CSRF token if provided
-      if (data.csrfToken) {
-        // This would be handled by the CSRF provider
-        console.log('Received new CSRF token');
-      }
-      
-      // Delay redirect for toast visibility
+      // Redirect to home page after a short delay to show success message
       setTimeout(() => {
         router.push('/');
-      }, 1500);
+      }, 1000);
       
     } catch (error) {
       console.error('Login error:', error);
-      setError('Network error. Please check your connection and try again.');
-      showError('Login failed: Network error');
+      
+      // Format user-friendly error message
+      let errorMessage = 'Failed to login. Please try again.';
+      
+      if (error.message === 'Invalid credentials') {
+        errorMessage = 'Invalid email or password';
+      } else if (error.message === 'Too many attempts') {
+        errorMessage = 'Too many failed login attempts. Please try again later';
+      } else if (error.message === 'Network error') {
+        errorMessage = 'Network error. Please check your connection';
+      }
+      
+      setErrors({ general: errorMessage });
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Disable form while CSRF token is loading
-  const isFormDisabled = loading || csrfLoading || 
-                       (lockoutTime && new Date(lockoutTime) > new Date());
-
   return (
-    <div className={styles['auth-container']}>
-      <div className={styles['auth-card']}>
-        <h1 className={styles['auth-title']}>Welcome Back</h1>
-        <p className={styles['auth-subtitle']}>Sign in to continue your spiritual journey</p>
+    <div className={styles.authContainer}>
+      <div className={styles.authCard}>
+        <h1 className={styles.authTitle}>Welcome Back</h1>
+        <p className={styles.authSubtitle}>Sign in to continue your spiritual journey</p>
         
-        <FormFeedback 
-          isSuccess={formSuccess} 
-          isError={!!error} 
-          successMessage="Login successful! Redirecting..." 
-          errorMessage={error}
-        />
-        
-        {lockoutTime && new Date(lockoutTime) > new Date() && (
-          <div className={styles['lockout-message']}>
-            <p>Your account is temporarily locked due to too many failed login attempts.</p>
-            <p>Please try again in {Math.round((new Date(lockoutTime) - new Date()) / 1000 / 60)} minutes.</p>
+        {/* Accessible error summary for screen readers */}
+        {Object.keys(errors).length > 0 && (
+          <div 
+            className={styles.errorMessage} 
+            role="alert" 
+            ref={errorRef}
+            tabIndex={-1}
+            aria-live="assertive"
+          >
+            {errors.general || 'Please correct the errors below:'}
+            {!errors.general && (
+              <ul className={styles.errorList}>
+                {Object.entries(errors).map(([field, message]) => (
+                  <li key={field}>{message}</li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
         
-        {csrfLoading && (
-          <div className="loading-message">
-            <p>Preparing secure login form...</p>
-          </div>
-        )}
-        
-        <form onSubmit={handleLogin} noValidate>
-          {/* Hidden CSRF token field */}
-          <input 
-            type="hidden" 
-            name="_csrf" 
-            value={csrfToken}
+        {/* Success message when login is successful */}
+        {showSuccess && (
+          <FormFeedback 
+            type="success" 
+            message="Login successful! Redirecting..." 
           />
-          
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
+        )}
+        
+        <form onSubmit={handleLogin} noValidate aria-label="Login form">
+          <div className={styles.inputGroup}>
+            <label htmlFor="email" className={styles.inputLabel}>
+              Email
+              {errors.email && <span className="sr-only"> (Error: {errors.email})</span>}
+            </label>
             <input
               id="email"
+              ref={emailInputRef}
               type="email"
               placeholder="your@email.com"
               value={email}
-              onChange={(e) => handleFieldChange('email', e.target.value)}
-              onBlur={() => validateField('email', email)}
-              required
+              onChange={(e) => setEmail(e.target.value)}
               aria-required="true"
-              disabled={isFormDisabled}
-              className={fieldErrors.email ? 'input-error' : ''}
-              aria-invalid={!!fieldErrors.email}
-              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              aria-invalid={errors.email ? "true" : "false"}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              disabled={loading || showSuccess}
+              className={errors.email ? styles.inputError : ''}
             />
-            {fieldErrors.email && (
-              <div className="field-error-message" id="email-error" role="alert">
-                {fieldErrors.email}
-              </div>
+            {errors.email && (
+              <p id="email-error" className={styles.fieldError}>
+                {errors.email}
+              </p>
             )}
           </div>
           
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="password" className={styles.inputLabel}>
+              Password
+              {errors.password && <span className="sr-only"> (Error: {errors.password})</span>}
+            </label>
             <input
               id="password"
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => handleFieldChange('password', e.target.value)}
-              onBlur={() => validateField('password', password)}
-              required
+              onChange={(e) => setPassword(e.target.value)}
               aria-required="true"
-              disabled={isFormDisabled}
+              aria-invalid={errors.password ? "true" : "false"}
+              aria-describedby={errors.password ? "password-error" : undefined}
+              disabled={loading || showSuccess}
+              className={errors.password ? styles.inputError : ''}
               minLength={6}
-              className={fieldErrors.password ? 'input-error' : ''}
-              aria-invalid={!!fieldErrors.password}
-              aria-describedby={fieldErrors.password ? "password-error" : undefined}
             />
-            {fieldErrors.password && (
-              <div className="field-error-message" id="password-error" role="alert">
-                {fieldErrors.password}
-              </div>
+            {errors.password && (
+              <p id="password-error" className={styles.fieldError}>
+                {errors.password}
+              </p>
             )}
           </div>
           
           <button 
             type="submit"
-            className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
-            disabled={
-              isFormDisabled || 
-              (formTouched && (!!fieldErrors.email || !!fieldErrors.password))
-            }
+            className={styles.authButton}
+            disabled={loading || showSuccess}
+            aria-busy={loading}
           >
-            {loading ? 'Signing in...' : formSuccess ? 'Success!' : 'Sign In'}
+            {loading ? (
+              <>
+                <span className={styles.loadingSpinner} aria-hidden="true"></span>
+                <span>Signing in...</span>
+              </>
+            ) : 'Sign In'}
           </button>
         </form>
         
-        <div className={styles['auth-links']}>
+        <div className={styles.authLinks}>
           <p>Don't have an account? <Link href="/auth/signup">Sign up</Link></p>
-          <Link href="/auth/reset-password" className={styles['forgot-password']}>Forgot password?</Link>
+          <Link href="/auth/reset-password" className={styles.forgotPassword}>
+            Forgot password?
+          </Link>
         </div>
       </div>
     </div>
