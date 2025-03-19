@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { auth, db } from '@/app/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
+import styles from '@/app/styles/auth.module.css';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -259,10 +260,10 @@ const Signup = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Join Halo on your spiritual journey</p>
+    <div className={styles['auth-container']}>
+      <div className={styles['auth-card']}>
+        <h1 className={styles['auth-title']}>Create Account</h1>
+        <p className={styles['auth-subtitle']}>Join Halo on your spiritual journey</p>
         
         {error && <div className="error-message" role="alert">{error}</div>}
         
@@ -338,8 +339,8 @@ const Signup = () => {
             )}
             {password && !fieldErrors.password && (
               <>
-                <div className="password-strength-meter">
-                  <div className={`strength-${passwordStrength}`}></div>
+                <div className={styles['password-strength-meter']}>
+                  <div className={styles[`strength-${passwordStrength}`]}></div>
                 </div>
                 <small>{getPasswordStrengthLabel()}</small>
               </>
@@ -391,14 +392,14 @@ const Signup = () => {
           
           <button 
             type="submit"
-            className="auth-button"
+            className={styles['auth-button']}
             disabled={loading || (formTouched && (!!fieldErrors.name || !!fieldErrors.email || !!fieldErrors.password || !!fieldErrors.confirmPassword))}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
         
-        <div className="auth-links">
+        <div className={styles['auth-links']}>
           <p>Already have an account? <Link href="/auth/login">Sign in</Link></p>
         </div>
       </div>
