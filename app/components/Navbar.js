@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/app/context/AuthContext';
 import { auth } from '@/app/lib/firebase';
 import { signOut } from 'firebase/auth';
+import styles from '@/app/styles/navbar.module.css';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -31,11 +32,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="container nav-container">
-        <div className="logo-container">
-          <Link href="/" className="logo">
-            <div className="logo-icon">
+    <nav className={styles.navbar}>
+      <div className={`container ${styles['nav-container']}`}>
+        <div className={styles['logo-container']}>
+          <Link href="/" className={styles.logo}>
+            <div className={styles['logo-icon']}>
               {/* Only render Image on client side to prevent hydration mismatch */}
               {mounted && (
                 <Image 
@@ -50,31 +51,31 @@ const Navbar = () => {
               )}
               {!mounted && <div style={{ width: 32, height: 32 }}></div>}
             </div>
-            <span className="logo-text">Halo</span>
+            <span className={styles['logo-text']}>Halo</span>
           </Link>
         </div>
 
         {/* Desktop Navigation */}
-        <ul className="nav-menu desktop-menu">
-          <li className="nav-item">
-            <Link href="/" className="nav-link">Home</Link>
+        <ul className={`${styles['nav-menu']} ${styles['desktop-menu']}`}>
+          <li className={styles['nav-item']}>
+            <Link href="/" className={styles['nav-link']}>Home</Link>
           </li>
           {currentUser ? (
             <>
-              <li className="nav-item">
-                <Link href="/profile" className="nav-link">Profile</Link>
+              <li className={styles['nav-item']}>
+                <Link href="/profile" className={styles['nav-link']}>Profile</Link>
               </li>
-              <li className="nav-item">
-                <button onClick={handleSignOut} className="nav-link logout-button">Logout</button>
+              <li className={styles['nav-item']}>
+                <button onClick={handleSignOut} className={`${styles['nav-link']} ${styles['logout-button']}`}>Logout</button>
               </li>
             </>
           ) : (
             <>
-              <li className="nav-item">
-                <Link href="/auth/signup" className="nav-link">Sign Up</Link>
+              <li className={styles['nav-item']}>
+                <Link href="/auth/signup" className={styles['nav-link']}>Sign Up</Link>
               </li>
-              <li className="nav-item">
-                <Link href="/auth/login" className="nav-link login-link">Login</Link>
+              <li className={styles['nav-item']}>
+                <Link href="/auth/login" className={`${styles['nav-link']} ${styles['login-link']}`}>Login</Link>
               </li>
             </>
           )}
@@ -83,24 +84,24 @@ const Navbar = () => {
         {/* Mobile Menu Toggle - Only shown when mounted */}
         {mounted && (
           <button 
-            className="mobile-menu-toggle" 
+            className={styles['mobile-menu-toggle']} 
             onClick={toggleMobileMenu}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMobileMenuOpen}
           >
-            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
-            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
-            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+            <span className={`${styles['hamburger-line']} ${isMobileMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles['hamburger-line']} ${isMobileMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles['hamburger-line']} ${isMobileMenuOpen ? styles.open : ''}`}></span>
           </button>
         )}
 
         {/* Mobile Navigation - Always render when mounted, but control visibility with CSS */}
         {mounted && (
-          <ul className={`nav-menu mobile-menu ${isMobileMenuOpen ? 'mobile-menu-visible' : 'mobile-menu-hidden'}`}>
-            <li className="nav-item">
+          <ul className={`${styles['nav-menu']} ${styles['mobile-menu']} ${isMobileMenuOpen ? styles['mobile-menu-visible'] : styles['mobile-menu-hidden']}`}>
+            <li className={styles['nav-item']}>
               <Link 
                 href="/" 
-                className="nav-link"
+                className={styles['nav-link']}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Home
@@ -108,22 +109,22 @@ const Navbar = () => {
             </li>
             {currentUser ? (
               <>
-                <li className="nav-item">
+                <li className={styles['nav-item']}>
                   <Link 
                     href="/profile" 
-                    className="nav-link"
+                    className={styles['nav-link']}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Profile
                   </Link>
                 </li>
-                <li className="nav-item">
+                <li className={styles['nav-item']}>
                   <button 
                     onClick={() => {
                       handleSignOut();
                       setIsMobileMenuOpen(false);
                     }} 
-                    className="nav-link logout-button"
+                    className={`${styles['nav-link']} ${styles['logout-button']}`}
                   >
                     Logout
                   </button>
@@ -131,19 +132,19 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <li className="nav-item">
+                <li className={styles['nav-item']}>
                   <Link 
                     href="/auth/signup" 
-                    className="nav-link"
+                    className={styles['nav-link']}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sign Up
                   </Link>
                 </li>
-                <li className="nav-item">
+                <li className={styles['nav-item']}>
                   <Link 
                     href="/auth/login" 
-                    className="nav-link"
+                    className={styles['nav-link']}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Login
