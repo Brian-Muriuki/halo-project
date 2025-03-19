@@ -6,6 +6,7 @@ import { generateChatResponse, loadConversationHistory } from '@/app/lib/openaiA
 import { useAuth } from '@/app/context/AuthContext';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
+import styles from '@/app/styles/chat.module.css';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -172,15 +173,15 @@ const Chat = () => {
 
   // Show simple loading state until component is mounted client-side
   if (!mounted) {
-    return <div className="chat-container-loading">Loading chat...</div>;
+    return <div className={styles['chat-container-loading']}>Loading chat...</div>;
   }
 
   return (
-    <div className="chat-container">
-      <div className="chat-messages" ref={chatContainerRef}>
+    <div className={styles['chat-container']}>
+      <div className={styles['chat-messages']} ref={chatContainerRef}>
         {messages.length === 0 ? (
-          <div className="empty-chat">
-            <div className="empty-chat-icon">
+          <div className={styles['empty-chat']}>
+            <div className={styles['empty-chat-icon']}>
               <Image 
                 src="/globe.svg" 
                 alt="Start a conversation" 
@@ -198,25 +199,25 @@ const Chat = () => {
           messages.map((message, index) => (
             <div
               key={index}
-              className={`message ${message.sender === 'user' ? 'user' : 'ai'}`}
+              className={`${styles.message} ${message.sender === 'user' ? styles.user : styles.ai}`}
             >
               {renderMessageContent(message.text)}
             </div>
           ))
         )}
         {isLoading && (
-          <div className="message ai loading">
+          <div className={`${styles.message} ${styles.ai} ${styles.loading}`}>
             <span>Thinking</span>
-            <span className="dot-animation">
-              <span className="loading-dot"></span>
-              <span className="loading-dot"></span>
-              <span className="loading-dot"></span>
+            <span className={styles['dot-animation']}>
+              <span className={styles['loading-dot']}></span>
+              <span className={styles['loading-dot']}></span>
+              <span className={styles['loading-dot']}></span>
             </span>
           </div>
         )}
       </div>
-      <div className="chat-input">
-        <div className="textarea-container">
+      <div className={styles['chat-input']}>
+        <div className={styles['textarea-container']}>
           <textarea
             ref={textareaRef}
             value={input}
@@ -230,13 +231,13 @@ const Chat = () => {
             aria-describedby={inputError ? "input-error" : undefined}
             maxLength={MAX_INPUT_LENGTH + 50} // Allow some buffer beyond the limit
           />
-          <div className="textarea-footer">
+          <div className={styles['textarea-footer']}>
             {inputError && input ? (
               <span className="field-error-message" id="input-error" role="alert">
                 {inputError}
               </span>
             ) : (
-              <span className={`character-count ${characterCount > MAX_INPUT_LENGTH ? 'text-error' : ''}`}>
+              <span className={`${styles['character-count']} ${characterCount > MAX_INPUT_LENGTH ? styles['text-error'] : ''}`}>
                 {characterCount}/{MAX_INPUT_LENGTH}
               </span>
             )}
@@ -245,7 +246,7 @@ const Chat = () => {
         <button 
           onClick={handleSendMessage}
           disabled={isLoading || !input.trim() || !!inputError}
-          className="send-button"
+          className={styles['send-button']}
           aria-label="Send message"
         >
           {isLoading ? 'Sending...' : 'Send'}
