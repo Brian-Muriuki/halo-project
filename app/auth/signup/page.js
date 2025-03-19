@@ -1,37 +1,39 @@
 // app/auth/signup/page.js
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth, db } from '@/app/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import styles from '@/app/styles/auth.module.css';
 import { useToast } from '@/app/context/ToastContext';
+import { validateSignup } from '@/app/utils/validateForms';
 import FormFeedback from '@/app/components/FormFeedback';
+import styles from '../auth.module.css';
 
+/**
+ * Signup Component - Handles new user registration
+ * Implements accessibility features, form validation, and error handling
+ */
 const Signup = () => {
+  // State for form inputs and UI state
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [denomination, setDenomination] = useState('non-denominational');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [formTouched, setFormTouched] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [formSuccess, setFormSuccess] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [csrfToken, setCsrfToken] = useState('');
   
+  // Refs for accessibility and focus management
+  const nameInputRef = useRef(null);
+  const errorRef = useRef(null);
+  
+  // Hooks
   const router = useRouter();
-  const { showSuccess, showError, showInfo } = useToast();
+  const { showToast } = useToast();
 
+  // List of denominations for the dropdown
   const denominations = [
     'non-denominational',
     'catholic',
@@ -49,185 +51,72 @@ const Signup = () => {
     'other'
   ];
 
-  // Email validation regex - more comprehensive
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  // Name validation regex - allows letters, spaces, hyphens, and apostrophes
-  const nameRegex = /^[a-zA-Z\s'-]+$/;
-
-  // Real-time validation as user types
+  // Fetch CSRF token on component mount
   useEffect(() => {
-    if (formTouched) {
-      validateField('name', name);
-      validateField('email', email);
-      validateField('password', password);
-      validateField('confirmPassword', confirmPassword);
-    }
-  }, [name, email, password, confirmPassword, formTouched]);
-
-  // Check password strength
-  useEffect(() => {
-    if (password) {
-      const hasLowercase = /[a-z]/.test(password);
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasNumber = /[0-9]/.test(password);
-      const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
-      const isLongEnough = password.length >= 8;
-      
-      const strengthScore = [hasLowercase, hasUppercase, hasNumber, hasSpecialChar, isLongEnough]
-        .filter(Boolean).length;
-      
-      if (strengthScore <= 2) {
-        setPasswordStrength('weak');
-      } else if (strengthScore === 3) {
-        setPasswordStrength('fair');
-      } else if (strengthScore === 4) {
-        setPasswordStrength('good');
-      } else {
-        setPasswordStrength('strong');
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await fetch('/api/auth/csrf');
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+      } catch (error) {
+        console.error('Error fetching CSRF token:', error);
       }
-    } else {
-      setPasswordStrength('');
-    }
-  }, [password]);
+    };
 
-  // Show password strength toast when password strength changes
+    fetchCsrfToken();
+    
+    // Focus the name input when component mounts for better user experience
+    if (nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, []);
+  
+  // Focus on error message when errors are present for screen readers
   useEffect(() => {
-    if (passwordStrength && !fieldErrors.password && password.length >= 6) {
-      switch (passwordStrength) {
-        case 'weak':
-          showInfo('Password strength: Weak - Consider adding more variety', 2000);
-          break;
-        case 'fair':
-          showInfo('Password strength: Fair - Getting better!', 2000);
-          break;
-        case 'good':
-          showInfo('Password strength: Good - Almost there!', 2000);
-          break;
-        case 'strong':
-          showInfo('Password strength: Strong - Excellent choice!', 2000);
-          break;
-        default:
-          break;
-      }
+    if (Object.keys(errors).length > 0 && errorRef.current) {
+      errorRef.current.focus();
     }
-  }, [passwordStrength, fieldErrors.password, password, showInfo]);
+  }, [errors]);
 
-  const validateField = (field, value) => {
-    let newFieldErrors = { ...fieldErrors };
-    
-    switch (field) {
-      case 'name':
-        if (!value.trim()) {
-          newFieldErrors.name = 'Name is required';
-        } else if (value.trim().length < 2) {
-          newFieldErrors.name = 'Name must be at least 2 characters';
-        } else if (!nameRegex.test(value)) {
-          newFieldErrors.name = 'Name contains invalid characters';
-        } else if (value.trim().length > 50) {
-          newFieldErrors.name = 'Name must be less than 50 characters';
-        } else {
-          newFieldErrors.name = '';
-        }
-        break;
-        
-      case 'email':
-        if (!value.trim()) {
-          newFieldErrors.email = 'Email is required';
-        } else if (!emailRegex.test(value)) {
-          newFieldErrors.email = 'Please enter a valid email address';
-        } else {
-          newFieldErrors.email = '';
-        }
-        break;
-        
-      case 'password':
-        if (!value) {
-          newFieldErrors.password = 'Password is required';
-        } else if (value.length < 6) {
-          newFieldErrors.password = 'Password must be at least 6 characters';
-        } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) {
-          newFieldErrors.password = 'Password must contain at least one letter and one number';
-        } else {
-          newFieldErrors.password = '';
-        }
-        break;
-        
-      case 'confirmPassword':
-        if (!value) {
-          newFieldErrors.confirmPassword = 'Please confirm your password';
-        } else if (value !== password) {
-          newFieldErrors.confirmPassword = 'Passwords do not match';
-        } else {
-          newFieldErrors.confirmPassword = '';
-        }
-        break;
-        
-      default:
-        break;
-    }
-    
-    setFieldErrors(newFieldErrors);
-    return !newFieldErrors[field]; // Return true if valid
-  };
-
-  // Improved validation function
+  /**
+   * Validates form input before submission
+   * @returns {boolean} Whether the form is valid
+   */
   const validateForm = () => {
-    // Reset error
-    setError('');
-    setFormSuccess(false);
+    // Clear previous errors
+    setErrors({});
     
-    // Validate all fields at once
-    const isNameValid = validateField('name', name);
-    const isEmailValid = validateField('email', email);
-    const isPasswordValid = validateField('password', password);
-    const isConfirmPasswordValid = validateField('confirmPassword', confirmPassword);
+    const validationResult = validateSignup(name, email, password, confirmPassword);
     
-    return isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid;
+    if (!validationResult.isValid) {
+      setErrors(validationResult.errors);
+      return false;
+    }
+    
+    return true;
   };
 
-  const handleFieldChange = (field, value) => {
-    if (!formTouched) {
-      setFormTouched(true);
-    }
-    
-    // Clear success state when form is edited
-    if (formSuccess) {
-      setFormSuccess(false);
-    }
-    
-    switch (field) {
-      case 'name':
-        setName(value);
-        break;
-      case 'email':
-        setEmail(value);
-        break;
-      case 'password':
-        setPassword(value);
-        break;
-      case 'confirmPassword':
-        setConfirmPassword(value);
-        break;
-      case 'denomination':
-        setDenomination(value);
-        break;
-      default:
-        break;
-    }
-  };
-
+  /**
+   * Handles the signup submission process
+   * Validates inputs, creates user in Firebase, and handles response
+   * @param {Event} e - The form submission event
+   */
   const handleSignup = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
     
     try {
-      setError('');
       setLoading(true);
       
-      // Validate form
-      if (!validateForm()) {
-        setLoading(false);
-        return;
-      }
+      // Dynamically import firebase
+      const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
+      const { doc, setDoc, getFirestore } = await import('firebase/firestore');
+      
+      const auth = getAuth();
+      const db = getFirestore();
       
       // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -252,184 +141,184 @@ const Signup = () => {
         }
       });
       
-      // Show success feedback
-      setFormSuccess(true);
-      showSuccess('Account created successfully! Redirecting...', 3000);
+      // Show success message and notification
+      setShowSuccess(true);
+      showToast('Account created successfully!', 'success');
       
-      // Delay redirect for toast visibility
+      // Redirect after a short delay
       setTimeout(() => {
         router.push('/');
-      }, 2000);
+      }, 1500);
       
     } catch (error) {
       console.error('Signup error:', error.message);
       
-      // Friendly error messages
+      // Format user-friendly error messages
+      let errorMessage = 'Failed to create account. Please try again.';
+      
       if (error.code === 'auth/email-already-in-use') {
-        setError('This email address is already in use');
-        showError('Signup failed: Email already in use');
+        errorMessage = 'This email address is already in use';
       } else if (error.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address');
-        showError('Signup failed: Invalid email');
+        errorMessage = 'Please enter a valid email address';
       } else if (error.code === 'auth/weak-password') {
-        setError('Please choose a stronger password');
-        showError('Signup failed: Password too weak');
+        errorMessage = 'Please choose a stronger password';
       } else if (error.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection and try again.');
-        showError('Signup failed: Network error');
-      } else if (error.code === 'auth/operation-not-allowed') {
-        setError('Account creation is temporarily disabled. Please try again later.');
-        showError('Signup failed: Operation not allowed');
-      } else {
-        setError(error.message || 'Failed to create account. Please try again.');
-        showError('Signup failed. Please try again.');
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
+      
+      setErrors({ general: errorMessage });
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const getPasswordStrengthLabel = () => {
-    switch (passwordStrength) {
-      case 'weak':
-        return 'Weak - Add uppercase, numbers, or symbols';
-      case 'fair':
-        return 'Fair - Add more variety or length';
-      case 'good':
-        return 'Good - Almost there!';
-      case 'strong':
-        return 'Strong - Excellent password!';
-      default:
-        return '';
-    }
-  };
-
   return (
-    <div className={styles['auth-container']}>
-      <div className={styles['auth-card']}>
-        <h1 className={styles['auth-title']}>Create Account</h1>
-        <p className={styles['auth-subtitle']}>Join Halo on your spiritual journey</p>
+    <div className={styles.authContainer}>
+      <div className={styles.authCard}>
+        <h1 className={styles.authTitle}>Create Account</h1>
+        <p className={styles.authSubtitle}>Join Halo on your spiritual journey</p>
         
-        <FormFeedback 
-          isSuccess={formSuccess} 
-          isError={!!error} 
-          successMessage="Account created successfully! Redirecting..." 
-          errorMessage={error}
-        />
+        {/* Accessible error summary for screen readers */}
+        {Object.keys(errors).length > 0 && (
+          <div 
+            className={styles.errorMessage} 
+            role="alert" 
+            ref={errorRef}
+            tabIndex={-1}
+            aria-live="assertive"
+          >
+            {errors.general || 'Please correct the errors below:'}
+            {!errors.general && (
+              <ul className={styles.errorList}>
+                {Object.entries(errors).map(([field, message]) => (
+                  <li key={field}>{message}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         
-        <form onSubmit={handleSignup} noValidate>
-          <div className="input-group">
-            <label htmlFor="name">Full Name</label>
+        {/* Success message when signup is successful */}
+        {showSuccess && (
+          <FormFeedback 
+            type="success" 
+            message="Account created successfully! Redirecting..." 
+          />
+        )}
+        
+        <form onSubmit={handleSignup} noValidate aria-label="Signup form">
+          <div className={styles.inputGroup}>
+            <label htmlFor="name" className={styles.inputLabel}>
+              Full Name
+              {errors.name && <span className="sr-only"> (Error: {errors.name})</span>}
+            </label>
             <input
               id="name"
+              ref={nameInputRef}
               type="text"
               placeholder="Your name"
               value={name}
-              onChange={(e) => handleFieldChange('name', e.target.value)}
-              onBlur={() => validateField('name', name)}
-              required
+              onChange={(e) => setName(e.target.value)}
               aria-required="true"
-              disabled={loading || formSuccess}
-              className={fieldErrors.name ? 'input-error' : ''}
-              aria-invalid={!!fieldErrors.name}
-              aria-describedby={fieldErrors.name ? "name-error" : undefined}
-              maxLength={50}
+              aria-invalid={errors.name ? "true" : "false"}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              disabled={loading || showSuccess}
+              className={errors.name ? styles.inputError : ''}
             />
-            {fieldErrors.name && (
-              <div className="field-error-message" id="name-error" role="alert">
-                {fieldErrors.name}
-              </div>
+            {errors.name && (
+              <p id="name-error" className={styles.fieldError}>
+                {errors.name}
+              </p>
             )}
           </div>
           
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="email" className={styles.inputLabel}>
+              Email
+              {errors.email && <span className="sr-only"> (Error: {errors.email})</span>}
+            </label>
             <input
               id="email"
               type="email"
               placeholder="your@email.com"
               value={email}
-              onChange={(e) => handleFieldChange('email', e.target.value)}
-              onBlur={() => validateField('email', email)}
-              required
+              onChange={(e) => setEmail(e.target.value)}
               aria-required="true"
-              disabled={loading || formSuccess}
-              className={fieldErrors.email ? 'input-error' : ''}
-              aria-invalid={!!fieldErrors.email}
-              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              aria-invalid={errors.email ? "true" : "false"}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              disabled={loading || showSuccess}
+              className={errors.email ? styles.inputError : ''}
             />
-            {fieldErrors.email && (
-              <div className="field-error-message" id="email-error" role="alert">
-                {fieldErrors.email}
-              </div>
+            {errors.email && (
+              <p id="email-error" className={styles.fieldError}>
+                {errors.email}
+              </p>
             )}
           </div>
           
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="password" className={styles.inputLabel}>
+              Password
+              {errors.password && <span className="sr-only"> (Error: {errors.password})</span>}
+            </label>
             <input
               id="password"
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => handleFieldChange('password', e.target.value)}
-              onBlur={() => validateField('password', password)}
-              required
+              onChange={(e) => setPassword(e.target.value)}
               aria-required="true"
-              disabled={loading || formSuccess}
+              aria-invalid={errors.password ? "true" : "false"}
+              aria-describedby="password-requirements password-error"
+              disabled={loading || showSuccess}
+              className={errors.password ? styles.inputError : ''}
               minLength={6}
-              className={fieldErrors.password ? 'input-error' : (passwordStrength === 'good' || passwordStrength === 'strong' ? 'input-success' : '')}
-              aria-invalid={!!fieldErrors.password}
-              aria-describedby={fieldErrors.password ? "password-error" : undefined}
             />
-            {fieldErrors.password && (
-              <div className="field-error-message" id="password-error" role="alert">
-                {fieldErrors.password}
-              </div>
-            )}
-            {password && !fieldErrors.password && (
-              <>
-                <div className={styles['password-strength-meter']}>
-                  <div className={styles[`strength-${passwordStrength}`]}></div>
-                </div>
-                <small>{getPasswordStrengthLabel()}</small>
-              </>
-            )}
-            {!password && (
-              <small>Must be at least 6 characters with letters and numbers</small>
+            <p id="password-requirements" className={styles.fieldHelp}>
+              Must be at least 6 characters with letters and numbers
+            </p>
+            {errors.password && (
+              <p id="password-error" className={styles.fieldError}>
+                {errors.password}
+              </p>
             )}
           </div>
           
-          <div className="input-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="confirmPassword" className={styles.inputLabel}>
+              Confirm Password
+              {errors.confirmPassword && <span className="sr-only"> (Error: {errors.confirmPassword})</span>}
+            </label>
             <input
               id="confirmPassword"
               type="password"
               placeholder="••••••••"
               value={confirmPassword}
-              onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
-              onBlur={() => validateField('confirmPassword', confirmPassword)}
-              required
+              onChange={(e) => setConfirmPassword(e.target.value)}
               aria-required="true"
-              disabled={loading || formSuccess}
-              className={fieldErrors.confirmPassword ? 'input-error' : (confirmPassword && !fieldErrors.confirmPassword ? 'input-success' : '')}
-              aria-invalid={!!fieldErrors.confirmPassword}
-              aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
+              aria-invalid={errors.confirmPassword ? "true" : "false"}
+              aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
+              disabled={loading || showSuccess}
+              className={errors.confirmPassword ? styles.inputError : ''}
             />
-            {fieldErrors.confirmPassword && (
-              <div className="field-error-message" id="confirm-password-error" role="alert">
-                {fieldErrors.confirmPassword}
-              </div>
+            {errors.confirmPassword && (
+              <p id="confirm-password-error" className={styles.fieldError}>
+                {errors.confirmPassword}
+              </p>
             )}
           </div>
           
-          <div className="input-group">
-            <label htmlFor="denomination">Faith Tradition (Optional)</label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="denomination" className={styles.inputLabel}>
+              Faith Tradition (Optional)
+            </label>
             <select
               id="denomination"
               value={denomination}
-              onChange={(e) => handleFieldChange('denomination', e.target.value)}
-              disabled={loading || formSuccess}
+              onChange={(e) => setDenomination(e.target.value)}
+              disabled={loading || showSuccess}
+              aria-describedby="denomination-help"
             >
               {denominations.map((denom) => (
                 <option key={denom} value={denom}>
@@ -437,19 +326,27 @@ const Signup = () => {
                 </option>
               ))}
             </select>
-            <small>This helps us personalize your experience</small>
+            <p id="denomination-help" className={styles.fieldHelp}>
+              This helps us personalize your experience
+            </p>
           </div>
           
           <button 
             type="submit"
-            className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
-            disabled={loading || formSuccess || (formTouched && (!!fieldErrors.name || !!fieldErrors.email || !!fieldErrors.password || !!fieldErrors.confirmPassword))}
+            className={styles.authButton}
+            disabled={loading || showSuccess}
+            aria-busy={loading}
           >
-            {loading ? 'Creating Account...' : formSuccess ? 'Success!' : 'Create Account'}
+            {loading ? (
+              <>
+                <span className={styles.loadingSpinner} aria-hidden="true"></span>
+                <span>Creating Account...</span>
+              </>
+            ) : 'Create Account'}
           </button>
         </form>
         
-        <div className={styles['auth-links']}>
+        <div className={styles.authLinks}>
           <p>Already have an account? <Link href="/auth/login">Sign in</Link></p>
         </div>
       </div>
