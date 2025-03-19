@@ -134,6 +134,36 @@
   color: #ef4444;
 }
 
+/* Lockout message styling */
+.lockout-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  animation: pulse-light 2s infinite ease-in-out;
+}
+
+@keyframes pulse-light {
+  0%, 100% {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+  50% {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.lockout-message p {
+  margin: 0.5rem 0;
+  color: #ef4444;
+  font-size: 0.9rem;
+}
+
+.lockout-message p:last-child {
+  font-weight: 600;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .auth-card {
@@ -142,5 +172,20 @@
   
   .auth-title {
     font-size: 1.75rem;
+  }
+}
+
+/* For users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lockout-message {
+    animation: none;
+  }
+  
+  .auth-button:hover {
+    transform: none;
+  }
+  
+  .auth-button-success {
+    transform: none;
   }
 }
