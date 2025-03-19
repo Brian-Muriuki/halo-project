@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { auth } from '@/app/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import styles from '@/app/styles/auth.module.css';
+import { useToast } from '@/app/context/ToastContext';
+import FormFeedback from '@/app/components/FormFeedback';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,10 +20,12 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(false);
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
 
   // Email validation regex - more comprehensive
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
   // Real-time validation as user types
   useEffect(() => {
@@ -64,6 +68,7 @@ const Login = () => {
   const validateForm = () => {
     // Reset previous errors
     setError('');
+    setFormSuccess(false);
     
     // Validate all fields
     const isEmailValid = validateField('email', email);
@@ -75,6 +80,11 @@ const Login = () => {
   const handleFieldChange = (field, value) => {
     if (!formTouched) {
       setFormTouched(true);
+    }
+    
+    // Clear success state when form is edited
+    if (formSuccess) {
+      setFormSuccess(false);
     }
     
     switch (field) {
@@ -102,23 +112,37 @@ const Login = () => {
       // Use the imported auth instance and signInWithEmailAndPassword function
       await signInWithEmailAndPassword(auth, email, password);
       
-      router.push('/');
+      // Show success feedback
+      setFormSuccess(true);
+      showSuccess('Login successful! Redirecting...');
+      
+      // Delay redirect for toast visibility
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+      
     } catch (error) {
       console.error('Login error:', error);
       
       // User-friendly error messages
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         setError('Invalid email or password');
+        showError('Login failed: Invalid email or password');
       } else if (error.code === 'auth/too-many-requests') {
         setError('Too many failed login attempts. Please try again later');
+        showError('Login failed: Too many attempts');
       } else if (error.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection');
+        showError('Login failed: Network error');
       } else if (error.code === 'auth/invalid-credential') {
         setError('Invalid login credentials. Please check your email and password');
+        showError('Login failed: Invalid credentials');
       } else if (error.code === 'auth/user-disabled') {
         setError('This account has been disabled. Please contact support');
+        showError('Login failed: Account disabled');
       } else {
         setError(error.message || 'Failed to login. Please try again.');
+        showError('Login failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -131,7 +155,12 @@ const Login = () => {
         <h1 className={styles['auth-title']}>Welcome Back</h1>
         <p className={styles['auth-subtitle']}>Sign in to continue your spiritual journey</p>
         
-        {error && <div className="error-message" role="alert">{error}</div>}
+        <FormFeedback 
+          isSuccess={formSuccess} 
+          isError={!!error} 
+          successMessage="Login successful! Redirecting..." 
+          errorMessage={error}
+        />
         
         <form onSubmit={handleLogin} noValidate>
           <div className="input-group">
@@ -183,10 +212,10 @@ const Login = () => {
           
           <button 
             type="submit"
-            className={styles['auth-button']}
+            className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
             disabled={loading || (formTouched && (!!fieldErrors.email || !!fieldErrors.password))}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Signing in...' : formSuccess ? 'Success!' : 'Sign In'}
           </button>
         </form>
         
