@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from '@/app/styles/auth.module.css';
 import { useToast } from '@/app/context/ToastContext';
+import { useCsrf } from '@/app/context/CsrfContext';
 import FormFeedback from '@/app/components/FormFeedback';
 
 const Login = () => {
@@ -23,6 +24,7 @@ const Login = () => {
   const [lockoutTime, setLockoutTime] = useState(null);
   const router = useRouter();
   const { showSuccess, showError, showWarning } = useToast();
+  const { csrfToken, withCsrf, csrfHeader, loading: csrfLoading } = useCsrf();
 
   // Email validation regex - more comprehensive
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -116,27 +118,36 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || csrfLoading) {
       return;
     }
     
     try {
       setLoading(true);
       
-      // Use our API route with rate limiting
+      // Use our API route with rate limiting and CSRF protection
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
         },
-        body: JSON.stringify({ email, password }),
+        credentials: 'include', // Include cookies in the request
+        body: JSON.stringify(withCsrf({ 
+          email, 
+          password
+        })),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
         // Handle API errors
-        if (response.status === 429) {
+        if (response.status === 403) {
+          // CSRF validation failed
+          showError('Security validation failed. Please refresh the page and try again.');
+          setError('Security validation failed. Please refresh the page and try again.');
+        } else if (response.status === 429) {
           // Rate limit exceeded
           setLockoutTime(data.lockedUntil);
           showError(data.error);
@@ -157,6 +168,12 @@ const Login = () => {
       setFormSuccess(true);
       showSuccess('Login successful! Redirecting...');
       
+      // Store new CSRF token if provided
+      if (data.csrfToken) {
+        // This would be handled by the CSRF provider
+        console.log('Received new CSRF token');
+      }
+      
       // Delay redirect for toast visibility
       setTimeout(() => {
         router.push('/');
@@ -170,6 +187,10 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Disable form while CSRF token is loading
+  const isFormDisabled = loading || csrfLoading || 
+                       (lockoutTime && new Date(lockoutTime) > new Date());
 
   return (
     <div className={styles['auth-container']}>
@@ -191,7 +212,20 @@ const Login = () => {
           </div>
         )}
         
+        {csrfLoading && (
+          <div className="loading-message">
+            <p>Preparing secure login form...</p>
+          </div>
+        )}
+        
         <form onSubmit={handleLogin} noValidate>
+          {/* Hidden CSRF token field */}
+          <input 
+            type="hidden" 
+            name="_csrf" 
+            value={csrfToken}
+          />
+          
           <div className="input-group">
             <label htmlFor="email">Email</label>
             <input
@@ -203,7 +237,7 @@ const Login = () => {
               onBlur={() => validateField('email', email)}
               required
               aria-required="true"
-              disabled={loading || (lockoutTime && new Date(lockoutTime) > new Date())}
+              disabled={isFormDisabled}
               className={fieldErrors.email ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
@@ -226,7 +260,7 @@ const Login = () => {
               onBlur={() => validateField('password', password)}
               required
               aria-required="true"
-              disabled={loading || (lockoutTime && new Date(lockoutTime) > new Date())}
+              disabled={isFormDisabled}
               minLength={6}
               className={fieldErrors.password ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.password}
@@ -243,9 +277,8 @@ const Login = () => {
             type="submit"
             className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
             disabled={
-              loading || 
-              (formTouched && (!!fieldErrors.email || !!fieldErrors.password)) ||
-              (lockoutTime && new Date(lockoutTime) > new Date())
+              isFormDisabled || 
+              (formTouched && (!!fieldErrors.email || !!fieldErrors.password))
             }
           >
             {loading ? 'Signing in...' : formSuccess ? 'Success!' : 'Sign In'}
