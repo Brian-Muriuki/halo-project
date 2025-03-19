@@ -1,6 +1,6 @@
 // app/layout.js
 import Navbar from '@/app/components/Navbar';
-import './globals.css';
+import '@/app/styles/base.css';
 import { Inter, Lora, Open_Sans } from 'next/font/google';
 import { AuthProvider } from '@/app/context/AuthContext';
 
