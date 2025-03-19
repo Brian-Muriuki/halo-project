@@ -1,8 +1,10 @@
 // app/layout.js
 import Navbar from '@/app/components/Navbar';
-import './globals.css';
+import '@/app/styles/base.css';
 import { Inter, Lora, Open_Sans } from 'next/font/google';
 import { AuthProvider } from '@/app/context/AuthContext';
+import { ToastProvider } from '@/app/context/ToastContext';
+import { CsrfProvider } from '@/app/context/CsrfContext';
 
 // Define fonts
 const lora = Lora({ 
@@ -29,17 +31,21 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${lora.variable} ${openSans.variable}`}>
       <body>
         <AuthProvider>
-          <div className="page-container">
-            <Navbar />
-            <main className="main-content">
-              {children}
-            </main>
-            <footer className="site-footer">
-              <div className="container">
-                <p>Halo - Your companion for spiritual growth</p>
+          <CsrfProvider>
+            <ToastProvider>
+              <div className="page-container">
+                <Navbar />
+                <main className="main-content">
+                  {children}
+                </main>
+                <footer className="site-footer">
+                  <div className="container">
+                    <p>Halo - Your companion for spiritual growth</p>
+                  </div>
+                </footer>
               </div>
-            </footer>
-          </div>
+            </ToastProvider>
+          </CsrfProvider>
         </AuthProvider>
       </body>
     </html>

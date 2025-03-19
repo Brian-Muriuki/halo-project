@@ -1,0 +1,142 @@
+/* Footer Component Styles */
+.site-footer {
+  background-color: var(--primary-blue);
+  color: white;
+  padding: 1.5rem 0;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .site-footer {
+    background-color: rgba(30, 58, 138, 0.9);
+  }
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .footer-content {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.footer-logo-text {
+  font-family: 'Lora', serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  justify-content: center;
+}
+
+.footer-nav-link {
+  color: var(--light-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-nav-link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.social-icon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.copyright {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 1rem;
+}
+
+.footer-divider {
+  width: 100%;
+  max-width: 100px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .footer-divider {
+    display: none;
+  }
+}
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer-column {
+    align-items: flex-start;
+    text-align: left;
+    margin-bottom: 0;
+  }
+}
+
+.column-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.column-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer-backdrop {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: linear-gradient(to top, rgba(30, 58, 138, 0.4), transparent);
+  z-index: -1;
+}

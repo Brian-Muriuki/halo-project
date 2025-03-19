@@ -2,19 +2,20 @@
 import React from 'react';
 import Chat from './components/Chat';
 import Image from 'next/image';
+import styles from '@/app/styles/hero.module.css';
 
 const Home = () => {
   return (
     <div className="container">
-      <div className="hero-section">
-        <div className="hero-content">
-          <h1 className="welcome-title">Welcome to Halo</h1>
-          <p className="welcome-description">
+      <div className={styles['hero-section']}>
+        <div className={styles['hero-content']}>
+          <h1 className={styles['welcome-title']}>Welcome to Halo</h1>
+          <p className={styles['welcome-description']}>
             Your Christian Spiritual Companion for reflection, growth, and guidance
           </p>
-          <div className="features">
-            <div className="feature">
-              <div className="feature-icon">
+          <div className={styles.features}>
+            <div className={styles.feature}>
+              <div className={styles['feature-icon']}>
                 <Image 
                   src="/globe.svg" 
                   alt="Community icon" 
@@ -28,8 +29,8 @@ const Home = () => {
               <h3>Daily Reflection</h3>
               <p>Find peace in scripture and guided spiritual conversations</p>
             </div>
-            <div className="feature">
-              <div className="feature-icon">
+            <div className={styles.feature}>
+              <div className={styles['feature-icon']}>
                 <Image 
                   src="/file.svg" 
                   alt="Scripture icon" 
@@ -43,8 +44,8 @@ const Home = () => {
               <h3>Scripture Guidance</h3>
               <p>Discover relevant verses for your spiritual journey</p>
             </div>
-            <div className="feature">
-              <div className="feature-icon">
+            <div className={styles.feature}>
+              <div className={styles['feature-icon']}>
                 <Image 
                   src="/window.svg" 
                   alt="Reflection icon" 
@@ -60,7 +61,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-        <div className="chat-wrapper">
+        <div className={styles['chat-wrapper']}>
           <h2>Begin Your Conversation</h2>
           <Chat />
         </div>
