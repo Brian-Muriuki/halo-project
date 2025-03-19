@@ -8,6 +8,8 @@ import { auth, db } from '@/app/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import styles from '@/app/styles/auth.module.css';
+import { useToast } from '@/app/context/ToastContext';
+import FormFeedback from '@/app/components/FormFeedback';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -25,8 +27,10 @@ const Signup = () => {
     password: '',
     confirmPassword: '',
   });
+  const [formSuccess, setFormSuccess] = useState(false);
   
   const router = useRouter();
+  const { showSuccess, showError, showInfo } = useToast();
 
   const denominations = [
     'non-denominational',
@@ -85,6 +89,28 @@ const Signup = () => {
       setPasswordStrength('');
     }
   }, [password]);
+
+  // Show password strength toast when password strength changes
+  useEffect(() => {
+    if (passwordStrength && !fieldErrors.password && password.length >= 6) {
+      switch (passwordStrength) {
+        case 'weak':
+          showInfo('Password strength: Weak - Consider adding more variety', 2000);
+          break;
+        case 'fair':
+          showInfo('Password strength: Fair - Getting better!', 2000);
+          break;
+        case 'good':
+          showInfo('Password strength: Good - Almost there!', 2000);
+          break;
+        case 'strong':
+          showInfo('Password strength: Strong - Excellent choice!', 2000);
+          break;
+        default:
+          break;
+      }
+    }
+  }, [passwordStrength, fieldErrors.password, password, showInfo]);
 
   const validateField = (field, value) => {
     let newFieldErrors = { ...fieldErrors };
@@ -148,6 +174,7 @@ const Signup = () => {
   const validateForm = () => {
     // Reset error
     setError('');
+    setFormSuccess(false);
     
     // Validate all fields at once
     const isNameValid = validateField('name', name);
@@ -161,6 +188,11 @@ const Signup = () => {
   const handleFieldChange = (field, value) => {
     if (!formTouched) {
       setFormTouched(true);
+    }
+    
+    // Clear success state when form is edited
+    if (formSuccess) {
+      setFormSuccess(false);
     }
     
     switch (field) {
@@ -220,24 +252,37 @@ const Signup = () => {
         }
       });
       
-      console.log('Signup successful!');
-      router.push('/');
+      // Show success feedback
+      setFormSuccess(true);
+      showSuccess('Account created successfully! Redirecting...', 3000);
+      
+      // Delay redirect for toast visibility
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+      
     } catch (error) {
       console.error('Signup error:', error.message);
       
       // Friendly error messages
       if (error.code === 'auth/email-already-in-use') {
         setError('This email address is already in use');
+        showError('Signup failed: Email already in use');
       } else if (error.code === 'auth/invalid-email') {
         setError('Please enter a valid email address');
+        showError('Signup failed: Invalid email');
       } else if (error.code === 'auth/weak-password') {
         setError('Please choose a stronger password');
+        showError('Signup failed: Password too weak');
       } else if (error.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection and try again.');
+        showError('Signup failed: Network error');
       } else if (error.code === 'auth/operation-not-allowed') {
         setError('Account creation is temporarily disabled. Please try again later.');
+        showError('Signup failed: Operation not allowed');
       } else {
         setError(error.message || 'Failed to create account. Please try again.');
+        showError('Signup failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -265,7 +310,12 @@ const Signup = () => {
         <h1 className={styles['auth-title']}>Create Account</h1>
         <p className={styles['auth-subtitle']}>Join Halo on your spiritual journey</p>
         
-        {error && <div className="error-message" role="alert">{error}</div>}
+        <FormFeedback 
+          isSuccess={formSuccess} 
+          isError={!!error} 
+          successMessage="Account created successfully! Redirecting..." 
+          errorMessage={error}
+        />
         
         <form onSubmit={handleSignup} noValidate>
           <div className="input-group">
@@ -279,7 +329,7 @@ const Signup = () => {
               onBlur={() => validateField('name', name)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || formSuccess}
               className={fieldErrors.name ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.name}
               aria-describedby={fieldErrors.name ? "name-error" : undefined}
@@ -303,7 +353,7 @@ const Signup = () => {
               onBlur={() => validateField('email', email)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || formSuccess}
               className={fieldErrors.email ? 'input-error' : ''}
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
@@ -326,7 +376,7 @@ const Signup = () => {
               onBlur={() => validateField('password', password)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || formSuccess}
               minLength={6}
               className={fieldErrors.password ? 'input-error' : (passwordStrength === 'good' || passwordStrength === 'strong' ? 'input-success' : '')}
               aria-invalid={!!fieldErrors.password}
@@ -361,7 +411,7 @@ const Signup = () => {
               onBlur={() => validateField('confirmPassword', confirmPassword)}
               required
               aria-required="true"
-              disabled={loading}
+              disabled={loading || formSuccess}
               className={fieldErrors.confirmPassword ? 'input-error' : (confirmPassword && !fieldErrors.confirmPassword ? 'input-success' : '')}
               aria-invalid={!!fieldErrors.confirmPassword}
               aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
@@ -379,7 +429,7 @@ const Signup = () => {
               id="denomination"
               value={denomination}
               onChange={(e) => handleFieldChange('denomination', e.target.value)}
-              disabled={loading}
+              disabled={loading || formSuccess}
             >
               {denominations.map((denom) => (
                 <option key={denom} value={denom}>
@@ -392,10 +442,10 @@ const Signup = () => {
           
           <button 
             type="submit"
-            className={styles['auth-button']}
-            disabled={loading || (formTouched && (!!fieldErrors.name || !!fieldErrors.email || !!fieldErrors.password || !!fieldErrors.confirmPassword))}
+            className={`${styles['auth-button']} ${formSuccess ? styles['auth-button-success'] : ''}`}
+            disabled={loading || formSuccess || (formTouched && (!!fieldErrors.name || !!fieldErrors.email || !!fieldErrors.password || !!fieldErrors.confirmPassword))}
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? 'Creating Account...' : formSuccess ? 'Success!' : 'Create Account'}
           </button>
         </form>
         
