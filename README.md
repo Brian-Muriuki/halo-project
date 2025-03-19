@@ -1,27 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Halo - Christian Spiritual Companion
 
-# Halo Project
+Halo is a Next.js application designed to be a spiritual companion for Christians, providing scripture-based guidance, conversations, and support for spiritual growth.
 
-Halo is a spiritual companion app designed to support Christians in their faith journey through an AI-powered chatbot, journaling features, and personalized notifications.
+![Halo Project](https://via.placeholder.com/800x400?text=Halo+Project)
 
-## Features
+## Project Overview
 
-- AI-powered spiritual companion chatbot
-- Scripture integration and reference capabilities
-- User authentication with personalized experiences
-- Responsive design that works across devices
-- Dark mode support
+Halo serves as a digital companion that points users toward scripture and encourages spiritual growth. It includes features such as:
 
-## CSS Architecture
-
-This project uses CSS Modules for component styling to ensure:
-
-- Better encapsulation and avoidance of CSS conflicts
-- Component-scoped styling
-- Improved maintainability and organization
-- Type safety with named imports
-
-See the [CSS Architecture Documentation](./app/styles/README.md) for detailed information about our styling approach and guidelines.
+- AI-powered spiritual conversations with scripture references
+- User authentication and personalized experiences
+- Journaling features (coming soon)
+- Prayer reminders (coming soon)
 
 ## Getting Started
 
@@ -39,48 +29,143 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Core Technologies
 
-## Environment Variables
+- [Next.js](https://nextjs.org/) - React framework for server-rendered applications
+- [Firebase](https://firebase.google.com/) - Authentication and database
+- [OpenAI API](https://openai.com/api/) - AI conversation capabilities
+- [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS framework
 
-Create a `.env.local` file in the root directory with the following variables:
+## Features
 
+### Authentication System
+
+Halo includes a secure authentication system with:
+
+- Email/password registration and login
+- Form validation with helpful error messages
+- CSRF protection for enhanced security
+- Rate limiting to prevent brute force attacks
+- Accessibility-focused UI with screen reader support
+
+### Spiritual Conversations
+
+The conversation feature allows users to:
+
+- Discuss faith questions with AI guidance
+- Receive scripture references relevant to topics
+- Save and continue conversations
+
+## Form Validation Features
+
+We've implemented robust client-side form validation to enhance user experience:
+
+### Input Validation
+
+- **Email validation**: Ensures proper email format using regex patterns
+- **Password strength**: Requires minimum length and combination of letters and numbers
+- **Name validation**: Checks for valid name formats
+- **Matching passwords**: Verifies password confirmation matches during signup
+
+### Validation Feedback
+
+- **Immediate feedback**: Form errors are displayed as users type or on submission
+- **Field-specific errors**: Error messages are associated with specific form fields
+- **Accessible error states**: Error messages are announced to screen readers
+- **Focus management**: Focus moves to error messages for immediate awareness
+
+### Security Measures
+
+- **Rate limiting**: Prevents brute force attacks by limiting login attempts
+- **CSRF protection**: Cross-Site Request Forgery tokens secure form submissions
+- **Secure authentication**: Firebase Authentication for secure credential management
+
+## Testing
+
+The project includes comprehensive testing to ensure reliability:
+
+### Unit Tests
+
+Run unit tests with:
+
+```bash
+npm test
+# or
+npm run test:watch
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
-NEXT_PUBLIC_SCRIPTURE_API_KEY=your_scripture_api_key
-OPENAI_API_KEY=your_openai_api_key
+
+Unit tests cover:
+- Form validation functions
+- Utility functions
+- Component rendering
+
+### Integration Tests
+
+Integration tests cover form submissions and authentication flows:
+
+```bash
+npm test -- --testPathPattern=integration
 ```
 
-## Project Structure
+### Coverage Report
 
-- `/app` - Next.js app router structure
-- `/app/components` - Reusable components
-- `/app/styles` - CSS modules and base styles
-- `/app/lib` - Utility functions and API integration
-- `/app/context` - React context providers
-- `/app/auth` - Authentication pages
-- `/public` - Static assets
+Generate test coverage report with:
 
-## Tech Stack
+```bash
+npm run test:coverage
+```
 
-- **Frontend**: Next.js, React
-- **Styling**: CSS Modules, TailwindCSS
-- **Authentication**: Firebase Auth
-- **Database**: Firestore
-- **API Integration**: OpenAI, Scripture API
-- **Deployment**: Vercel
+## Accessibility Features
 
-## Learn More
+Halo is built with accessibility in mind:
 
-To learn more about Next.js, take a look at the following resources:
+### Keyboard Navigation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Focus management**: Proper focus order and management
+- **Focus indicators**: Visible focus outlines for keyboard users
+- **Skip links**: Hidden links that become visible on focus for keyboard users
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Screen Reader Support
+
+- **ARIA attributes**: Proper labeling of form controls and error messages
+- **Live regions**: Dynamic content changes announced to screen readers
+- **Meaningful alt text**: Images have descriptive alternative text
+
+### Visual Accessibility
+
+- **Color contrast**: All text meets WCAG AA contrast requirements
+- **Text sizing**: Responsive text sizing with proper hierarchy
+- **Dark mode support**: Automatic switching based on user preference
+
+### Reduced Motion
+
+- **Motion reduction**: Animations are disabled for users who prefer reduced motion
+
+## CSS Architecture
+
+The project uses a combination of global styles and CSS Modules:
+
+- **base.css**: Contains global variables, resets, and utility classes
+- **CSS Modules**: Component-specific styles with local scoping
+- **Media queries**: Responsive design for various screen sizes
+- **Dark mode**: Support for system preference dark mode
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Firebase Documentation](https://firebase.google.com/docs)
+- [OpenAI API Documentation](https://platform.openai.com/docs/introduction)
