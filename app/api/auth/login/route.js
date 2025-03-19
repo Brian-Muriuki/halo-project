@@ -1,5 +1,6 @@
 // app/api/auth/login/route.js
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { auth } from '@/app/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { 
@@ -7,6 +8,11 @@ import {
   recordFailedLoginAttempt, 
   resetLoginAttempts 
 } from '@/app/lib/rateLimiting';
+import {
+  csrfMiddleware,
+  generateToken,
+  setCsrfCookie
+} from '@/app/lib/csrf';
 
 // Set CORS headers function
 const setCorsHeaders = (response) => {
@@ -14,7 +20,7 @@ const setCorsHeaders = (response) => {
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
+    'Content-Type, Authorization, X-CSRF-Token'
   );
   return response;
 };
@@ -38,7 +44,8 @@ export async function POST(request) {
     }
 
     // Get request body
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email, password, _csrf } = body;
     
     // Validate inputs
     if (!email || !password) {
@@ -50,6 +57,21 @@ export async function POST(request) {
       );
     }
     
+    // Check CSRF token (if we have a session)
+    // We use the user's email as a session ID for simplicity
+    // In a production app, you'd use a real session ID
+    if (email) {
+      const csrfCheck = csrfMiddleware(request, email);
+      if (!csrfCheck.valid) {
+        return setCorsHeaders(
+          NextResponse.json(
+            { error: csrfCheck.error || 'CSRF validation failed' },
+            { status: 403 }
+          )
+        );
+      }
+    }
+    
     try {
       // Attempt to sign in
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -59,16 +81,29 @@ export async function POST(request) {
       const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
       resetLoginAttempts(ip);
       
-      // Return user data (excluding sensitive info)
-      return setCorsHeaders(
-        NextResponse.json({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          emailVerified: user.emailVerified,
-          success: true,
-        })
-      );
+      // Generate a new CSRF token for the session
+      const csrfToken = generateToken(user.uid);
+      
+      // Create the response
+      const response = NextResponse.json({
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        emailVerified: user.emailVerified,
+        success: true,
+        csrfToken,
+      });
+      
+      // Set CSRF token cookie
+      response.cookies.set('csrf-token', csrfToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 30, // 30 minutes
+      });
+      
+      return setCorsHeaders(response);
     } catch (error) {
       // Record failed login attempt
       const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
