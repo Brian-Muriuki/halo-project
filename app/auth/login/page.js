@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import styles from '../auth.module.css';  // Import the CSS module
+import styles from '../auth.module.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -95,7 +95,7 @@ const Login = () => {
               required
               aria-required="true"
               disabled={loading}
-              className={styles.focusVisible}  // Add this class
+              className={styles.focusVisible}
             />
           </div>
           
@@ -111,13 +111,13 @@ const Login = () => {
               aria-required="true"
               disabled={loading}
               minLength={6}
-              className={styles.focusVisible}  // Add this class
+              className={styles.focusVisible}
             />
           </div>
           
           <button 
             type="submit"
-            className={`auth-button ${styles.focusVisible}`}  // Add this class
+            className={`auth-button ${styles.focusVisible}`}
             disabled={loading}
           >
             {loading ? 'Signing in...' : 'Sign In'}
