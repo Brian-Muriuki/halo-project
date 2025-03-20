@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import styles from '../auth.module.css';  // Import the CSS module
+import styles from '../auth.module.css';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +16,114 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Rest of the existing code remains the same...
+  const denominations = [
+    'non-denominational',
+    'catholic',
+    'protestant',
+    'orthodox',
+    'baptist',
+    'methodist',
+    'presbyterian',
+    'lutheran',
+    'anglican',
+    'pentecostal',
+    'evangelical',
+    'adventist',
+    'charismatic',
+    'other'
+  ];
+
+  const validateForm = () => {
+    setError('');
+    
+    if (!name.trim()) {
+      setError('Please enter your name');
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    const passwordStrengthRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/;
+    if (!passwordStrengthRegex.test(password)) {
+      setError('Password must contain at least one letter and one number');
+      return false;
+    }
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSignup = async (e) => {
+    if (e) e.preventDefault();
+    
+    try {
+      setError('');
+      setLoading(true);
+      
+      if (!validateForm()) {
+        setLoading(false);
+        return;
+      }
+
+      const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
+      const { doc, setDoc, getFirestore } = await import('firebase/firestore');
+      
+      const auth = getAuth();
+      const db = getFirestore();
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await updateProfile(user, {
+        displayName: name
+      });
+      
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        email,
+        denomination,
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        preferences: {
+          notifications: true,
+          dailyVerse: true,
+          prayerReminders: true
+        }
+      });
+      
+      console.log('Signup successful!');
+      router.push('/');
+    } catch (error) {
+      console.error('Signup error:', error.message);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        setError('This email address is already in use');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Please choose a stronger password');
+      } else if (error.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError(error.message || 'Failed to create account. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="auth-container">
@@ -38,11 +145,10 @@ const Signup = () => {
               required
               aria-required="true"
               disabled={loading}
-              className={styles.focusVisible}  // Add this class
+              className={styles.focusVisible}
             />
           </div>
           
-          {/* Rest of your existing input fields, each can have the styles.focusVisible class */}
           <div className="input-group">
             <label htmlFor="email">Email</label>
             <input
@@ -54,15 +160,63 @@ const Signup = () => {
               required
               aria-required="true"
               disabled={loading}
-              className={styles.focusVisible}  // Add this class
+              className={styles.focusVisible}
             />
           </div>
-
-          {/* Similar for other inputs */}
+          
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+              minLength={6}
+              className={styles.focusVisible}
+            />
+            <small>Must be at least 6 characters with letters and numbers</small>
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              aria-required="true"
+              disabled={loading}
+              className={styles.focusVisible}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="denomination">Faith Tradition (Optional)</label>
+            <select
+              id="denomination"
+              value={denomination}
+              onChange={(e) => setDenomination(e.target.value)}
+              disabled={loading}
+              className={styles.focusVisible}
+            >
+              {denominations.map((denom) => (
+                <option key={denom} value={denom}>
+                  {denom.charAt(0).toUpperCase() + denom.slice(1)}
+                </option>
+              ))}
+            </select>
+            <small>This helps us personalize your experience</small>
+          </div>
           
           <button 
             type="submit"
-            className={`auth-button ${styles.focusVisible}`}  // Add to button as well
+            className={`auth-button ${styles.focusVisible}`}
             disabled={loading}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
