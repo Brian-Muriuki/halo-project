@@ -1,4 +1,4 @@
-/* Add this at the top of your existing CSS module */
+/* Correct CSS module approach for focus-visible */
 .focusVisible:focus-visible {
   outline: 2px solid var(--secondary-blue);
   outline-offset: 2px;
