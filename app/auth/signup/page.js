@@ -1,10 +1,14 @@
-// app/auth/signup/page.js
+// app/auth/signup/page.js - Updated with better error handling
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+
+// Import firebase auth directly to check for initialization
+import { getAuth } from 'firebase/auth';
+import { app } from '@/app/lib/firebase';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +18,21 @@ const Signup = () => {
   const [denomination, setDenomination] = useState('non-denominational');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [firebaseInitialized, setFirebaseInitialized] = useState(true);
   const router = useRouter();
+
+  // Check if Firebase is properly initialized on component mount
+  useEffect(() => {
+    try {
+      // This will throw an error if Firebase is not initialized
+      const auth = getAuth(app);
+      setFirebaseInitialized(true);
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      setFirebaseInitialized(false);
+      setError('Firebase configuration error. Please contact support.');
+    }
+  }, []);
 
   const denominations = [
     'non-denominational',
@@ -35,6 +53,11 @@ const Signup = () => {
 
   const validateForm = () => {
     setError('');
+    
+    if (!firebaseInitialized) {
+      setError('Firebase is not properly configured. Please contact support.');
+      return false;
+    }
     
     if (!name.trim()) {
       setError('Please enter your name');
@@ -77,6 +100,13 @@ const Signup = () => {
         setLoading(false);
         return;
       }
+      
+      // If Firebase isn't initialized, don't proceed
+      if (!firebaseInitialized) {
+        setError('Firebase is not properly configured. Please contact support.');
+        setLoading(false);
+        return;
+      }
 
       const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
       const { doc, setDoc, getFirestore } = await import('firebase/firestore');
@@ -107,9 +137,11 @@ const Signup = () => {
       console.log('Signup successful!');
       router.push('/');
     } catch (error) {
-      console.error('Signup error:', error.message);
+      console.error('Signup error:', error);
       
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === 'auth/configuration-not-found') {
+        setError('Firebase configuration error. Please check your environment variables.');
+      } else if (error.code === 'auth/email-already-in-use') {
         setError('This email address is already in use');
       } else if (error.code === 'auth/invalid-email') {
         setError('Please enter a valid email address');
@@ -147,6 +179,16 @@ const Signup = () => {
             <p className="text-gray-600 dark:text-gray-400 mt-2">Join Halo on your spiritual journey</p>
           </div>
           
+          {!firebaseInitialized && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 p-3 rounded-md mb-6" role="alert">
+              <p className="font-medium">Firebase Configuration Error</p>
+              <p className="text-sm mt-1">
+                The application isn't properly connected to Firebase. This is likely a server configuration issue.
+                Please contact support or check your environment variables.
+              </p>
+            </div>
+          )}
+          
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-md mb-6" role="alert">
               {error}
@@ -166,7 +208,7 @@ const Signup = () => {
                 onChange={(e) => setName(e.target.value)}
                 required
                 aria-required="true"
-                disabled={loading}
+                disabled={loading || !firebaseInitialized}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
@@ -183,7 +225,7 @@ const Signup = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 aria-required="true"
-                disabled={loading}
+                disabled={loading || !firebaseInitialized}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
@@ -200,7 +242,7 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 aria-required="true"
-                disabled={loading}
+                disabled={loading || !firebaseInitialized}
                 minLength={6}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
@@ -221,7 +263,7 @@ const Signup = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 aria-required="true"
-                disabled={loading}
+                disabled={loading || !firebaseInitialized}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
@@ -234,7 +276,7 @@ const Signup = () => {
                 id="denomination"
                 value={denomination}
                 onChange={(e) => setDenomination(e.target.value)}
-                disabled={loading}
+                disabled={loading || !firebaseInitialized}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 {denominations.map((denom) => (
@@ -251,7 +293,7 @@ const Signup = () => {
             <button 
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
-              disabled={loading}
+              disabled={loading || !firebaseInitialized}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>

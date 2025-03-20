@@ -1,4 +1,4 @@
-// app/lib/firebase.js
+// app/lib/firebase.js - Enhanced configuration
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -6,6 +6,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 import { getMessaging } from "firebase/messaging";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -21,8 +22,14 @@ let app;
 let analytics = null;
 let messaging = null;
 
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
+if (!getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+    throw new Error("Firebase initialization failed: " + error.message);
+  }
 } else {
   app = getApp();
 }
