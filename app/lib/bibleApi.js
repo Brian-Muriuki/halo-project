@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { csrfHeaderStandalone } from '@/app/context/CsrfContext';
 
 const API_KEY = process.env.NEXT_PUBLIC_SCRIPTURE_API_KEY;
 const BASE_URL = 'https://api.scripture.api.bible/v1';
@@ -12,6 +13,7 @@ export const getVerse = async (reference, bibleId) => {
       headers: {
         'api-key': API_KEY,
         'accept': 'application/json',
+        ...csrfHeaderStandalone(),
       },
     });
 
@@ -38,6 +40,7 @@ export const searchVerses = async (query, bibleId) => {
       headers: {
         'api-key': API_KEY,
         'accept': 'application/json',
+        ...csrfHeaderStandalone(),
       },
     });
 
@@ -133,6 +136,7 @@ export const getBibleVersions = async () => {
       headers: {
         'api-key': API_KEY,
         'accept': 'application/json',
+        ...csrfHeaderStandalone(),
       },
     });
 

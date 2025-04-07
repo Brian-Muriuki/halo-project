@@ -7,6 +7,26 @@ const CsrfContext = createContext();
 
 export const useCsrf = () => useContext(CsrfContext);
 
+// Add standalone, non-hook versions of the CSRF functions for use in utility files
+let globalCsrfToken = '';
+
+export const setCsrfTokenGlobal = (token) => {
+  globalCsrfToken = token;
+};
+
+export const withCsrfStandalone = (data = {}) => {
+  return {
+    ...data,
+    _csrf: globalCsrfToken
+  };
+};
+
+export const csrfHeaderStandalone = () => {
+  return {
+    'X-CSRF-Token': globalCsrfToken
+  };
+};
+
 export function CsrfProvider({ children }) {
   const [csrfToken, setCsrfToken] = useState('');
   const [loading, setLoading] = useState(true);
@@ -27,6 +47,8 @@ export function CsrfProvider({ children }) {
       
       const data = await response.json();
       setCsrfToken(data.csrfToken);
+      // Also update the global token for non-hook access
+      setCsrfTokenGlobal(data.csrfToken);
       
     } catch (error) {
       console.error('Error fetching CSRF token:', error);

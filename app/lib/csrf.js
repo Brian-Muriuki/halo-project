@@ -8,8 +8,17 @@ import crypto from 'crypto';
  * to protect against Cross-Site Request Forgery attacks.
  */
 
+// Check if we're running on the server
+const isServer = typeof window === 'undefined';
+
 // Secret key for signing tokens - in production, use environment variable
-const SECRET_KEY = process.env.CSRF_SECRET || 'halo-secret-key-change-in-production';
+const SECRET_KEY = process.env.CSRF_SECRET;
+if (!SECRET_KEY && !isServer) {
+  console.warn('CSRF_SECRET environment variable is not set. Using fallback for development only.');
+}
+if (!SECRET_KEY && isServer) {
+  throw new Error('CSRF_SECRET environment variable is not set');
+}
 
 // Token expiration time (30 minutes in milliseconds)
 const TOKEN_EXPIRY = 30 * 60 * 1000;

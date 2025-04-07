@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Toast from '../components/Toast';
 
 const ToastContext = createContext();
@@ -12,31 +12,32 @@ export function useToast() {
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  // Function to add a toast
-  const showToast = (message, type = 'success', duration = 3000) => {
+  // Use useCallback to stabilize the showToast function
+  const showToast = useCallback((message, type = 'success', duration = 3000) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prevToasts) => [...prevToasts, { id, message, type, duration }]);
     return id;
-  };
+  }, []);
 
-  // Helper functions for different toast types
-  const showSuccess = (message, duration) => showToast(message, 'success', duration);
-  const showError = (message, duration) => showToast(message, 'error', duration);
-  const showWarning = (message, duration) => showToast(message, 'warning', duration);
-  const showInfo = (message, duration) => showToast(message, 'info', duration);
+  // Helper functions using the stabilized showToast
+  const showSuccess = useCallback((message, duration) => showToast(message, 'success', duration), [showToast]);
+  const showError = useCallback((message, duration) => showToast(message, 'error', duration), [showToast]);
+  const showWarning = useCallback((message, duration) => showToast(message, 'warning', duration), [showToast]);
+  const showInfo = useCallback((message, duration) => showToast(message, 'info', duration), [showToast]);
 
-  // Function to remove a toast
-  const removeToast = (id) => {
+  // Use useCallback to stabilize the removeToast function
+  const removeToast = useCallback((id) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
-  };
+  }, []);
 
-  const value = {
+  // Use useMemo to stabilize the context value object
+  const value = useMemo(() => ({
     showToast,
     showSuccess,
     showError,
     showWarning,
     showInfo,
-  };
+  }), [showToast, showSuccess, showError, showWarning, showInfo]);
 
   return (
     <ToastContext.Provider value={value}>

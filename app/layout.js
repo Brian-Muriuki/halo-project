@@ -5,6 +5,7 @@ import { Inter, Lora, Open_Sans } from 'next/font/google';
 import { AuthProvider } from '@/app/context/AuthContext';
 import { ToastProvider } from '@/app/context/ToastContext';
 import { CsrfProvider } from '@/app/context/CsrfContext';
+import ClientOnly from '@/app/components/ClientOnly';
 
 // Define fonts
 const lora = Lora({ 
@@ -30,23 +31,25 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${lora.variable} ${openSans.variable}`}>
       <body>
-        <AuthProvider>
-          <CsrfProvider>
-            <ToastProvider>
-              <div className="page-container">
-                <Navbar />
-                <main className="main-content">
-                  {children}
-                </main>
-                <footer className="site-footer">
-                  <div className="container">
-                    <p>Halo - Your companion for spiritual growth</p>
-                  </div>
-                </footer>
-              </div>
-            </ToastProvider>
-          </CsrfProvider>
-        </AuthProvider>
+        <ClientOnly>
+          <AuthProvider>
+            <CsrfProvider>
+              <ToastProvider>
+                <div className="page-container">
+                  <Navbar />
+                  <main className="main-content">
+                    {children}
+                  </main>
+                  <footer className="site-footer">
+                    <div className="container">
+                      <p>Halo - Your companion for spiritual growth</p>
+                    </div>
+                  </footer>
+                </div>
+              </ToastProvider>
+            </CsrfProvider>
+          </AuthProvider>
+        </ClientOnly>
       </body>
     </html>
   );

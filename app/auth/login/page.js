@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getAuth, signInWithCustomToken } from 'firebase/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -50,26 +51,39 @@ const Login = () => {
     
     try {
       setLoading(true);
+      setError(''); // Clear previous errors
       
-      // Dynamically import firebase/auth
-      const { signInWithEmailAndPassword, getAuth } = await import('firebase/auth');
+      // --- Call the backend API route --- 
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Use the error message from the backend
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      // --- Login with Custom Token --- 
+      if (!data.customToken) {
+        throw new Error('Custom token not received from server.');
+      }
+      
       const auth = getAuth();
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithCustomToken(auth, data.customToken);
       
-      router.push('/');
+      console.log('Login successful!');
+      router.push('/'); // Redirect to home page
+      
     } catch (error) {
       console.error('Login error:', error);
-      
-      // User-friendly error messages
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        setError('Invalid email or password');
-      } else if (error.code === 'auth/too-many-requests') {
-        setError('Too many failed login attempts. Please try again later');
-      } else if (error.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection');
-      } else {
-        setError(error.message || 'Failed to login. Please try again.');
-      }
+      // Display the error message from the backend or a generic one
+      setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setLoading(false);
     }

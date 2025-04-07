@@ -26,14 +26,19 @@ const Chat = () => {
   // This useEffect ensures this component only renders fully on the client
   useEffect(() => {
     setMounted(true);
-    
-    // Load conversation history from localStorage
-    const history = loadConversationHistory();
-    if (history.length > 0) {
-      setMessages(history);
-      showInfo('Previous conversation loaded', 2000);
-    }
   }, []);
+  
+  // Load conversation history after component is mounted (client-side only)
+  useEffect(() => {
+    if (mounted) {
+      // Load conversation history from localStorage
+      const history = loadConversationHistory();
+      if (history.length > 0) {
+        setMessages(history);
+        showInfo('Previous conversation loaded', 2000);
+      }
+    }
+  }, [mounted, showInfo]); // Include showInfo in deps array
 
   // Scroll to bottom when messages change
   useEffect(() => {

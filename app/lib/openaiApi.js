@@ -1,4 +1,26 @@
 // app/lib/openaiApi.js
+import { withCsrfStandalone } from '@/app/context/CsrfContext';
+
+// Safe localStorage access helper
+const safeLocalStorage = {
+  getItem: (key) => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: (key, value) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key) => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
 export const generateChatResponse = async (messages, userDenomination = 'non-denominational') => {
   try {
     // Add user denomination to help tailor the response
@@ -23,10 +45,10 @@ export const generateChatResponse = async (messages, userDenomination = 'non-den
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify(withCsrfStandalone({ 
         messages: messagesWithContext,
         userDenomination 
-      }),
+      })),
     });
     
     if (!response.ok) {
@@ -52,13 +74,15 @@ export const generateChatResponse = async (messages, userDenomination = 'non-den
     
     // Store conversation in local storage for persistence between sessions
     try {
-      const storedConversation = JSON.parse(localStorage.getItem('conversation') || '[]');
-      // Only store user messages and AI responses, not system messages
-      const userMessages = messages.filter(msg => msg.role !== 'system');
-      const updatedConversation = [...storedConversation, ...userMessages, { role: 'assistant', content: data.response }];
-      // Keep only last 20 messages to prevent localStorage from getting too large
-      const trimmedConversation = updatedConversation.slice(-20);
-      localStorage.setItem('conversation', JSON.stringify(trimmedConversation));
+      if (typeof window !== 'undefined') {
+        const storedConversation = JSON.parse(safeLocalStorage.getItem('conversation') || '[]');
+        // Only store user messages and AI responses, not system messages
+        const userMessages = messages.filter(msg => msg.role !== 'system');
+        const updatedConversation = [...storedConversation, ...userMessages, { role: 'assistant', content: data.response }];
+        // Keep only last 20 messages to prevent localStorage from getting too large
+        const trimmedConversation = updatedConversation.slice(-20);
+        safeLocalStorage.setItem('conversation', JSON.stringify(trimmedConversation));
+      }
     } catch (storageError) {
       console.warn('Failed to store conversation in localStorage:', storageError);
     }
@@ -77,7 +101,7 @@ export const loadConversationHistory = () => {
   }
   
   try {
-    const storedConversation = localStorage.getItem('conversation');
+    const storedConversation = safeLocalStorage.getItem('conversation');
     if (!storedConversation) return [];
     
     const parsedConversation = JSON.parse(storedConversation);
@@ -100,7 +124,7 @@ export const clearConversationHistory = () => {
   }
   
   try {
-    localStorage.removeItem('conversation');
+    safeLocalStorage.removeItem('conversation');
     return true;
   } catch (error) {
     console.error('Error clearing conversation history:', error);

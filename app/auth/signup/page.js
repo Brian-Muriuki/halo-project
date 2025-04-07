@@ -101,57 +101,61 @@ const Signup = () => {
         return;
       }
       
-      // If Firebase isn't initialized, don't proceed
       if (!firebaseInitialized) {
         setError('Firebase is not properly configured. Please contact support.');
         setLoading(false);
         return;
       }
 
-      const { createUserWithEmailAndPassword, getAuth, updateProfile } = await import('firebase/auth');
-      const { doc, setDoc, getFirestore } = await import('firebase/firestore');
+      // --- Call the backend API route --- 
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email,
+          password,
+          name,
+          denomination 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Use the error message from the backend
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
       
+      // --- Signup successful, now log the user in automatically --- 
+      // Use the custom token approach for login after successful signup
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }), // Re-use email/password
+      });
+      
+      const loginData = await loginResponse.json();
+      
+      if (!loginResponse.ok) {
+         throw new Error(loginData.error || 'Failed to automatically log in after signup.');
+      }
+      
+      // Dynamically import signInWithCustomToken
+      const { signInWithCustomToken } = await import('firebase/auth');
       const auth = getAuth();
-      const db = getFirestore();
+      await signInWithCustomToken(auth, loginData.customToken);
       
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      // --- End auto-login --- 
       
-      await updateProfile(user, {
-        displayName: name
-      });
-      
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        email,
-        denomination,
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-        preferences: {
-          notifications: true,
-          dailyVerse: true,
-          prayerReminders: true
-        }
-      });
-      
-      console.log('Signup successful!');
-      router.push('/');
+      console.log('Signup and automatic login successful!', data);
+      router.push('/'); // Redirect to home page after successful signup and login
+
     } catch (error) {
       console.error('Signup error:', error);
-      
-      if (error.code === 'auth/configuration-not-found') {
-        setError('Firebase configuration error. Please check your environment variables.');
-      } else if (error.code === 'auth/email-already-in-use') {
-        setError('This email address is already in use');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address');
-      } else if (error.code === 'auth/weak-password') {
-        setError('Please choose a stronger password');
-      } else if (error.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection and try again.');
-      } else {
-        setError(error.message || 'Failed to create account. Please try again.');
-      }
+      // Display the error message from the backend or a generic one
+      setError(error.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
