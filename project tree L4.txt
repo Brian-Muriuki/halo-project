@@ -1,33 +1,64 @@
-
+.
+├── CODING_STANDARDS.md
+├── CSS_ARCHITECTURE.md
 ├── README.md
+├── __tests__
+│   ├── integration
+│   │   └── auth.test.js
+│   └── utils
+│       └── validateForms.test.js
 ├── app
 │   ├── api
-│   │   └── chat
+│   │   ├── auth
+│   │   │   └── login
+│   │   ├── chat
+│   │   │   └── route.js
+│   │   └── csrf
 │   │       └── route.js
 │   ├── auth
+│   │   ├── auth.module.css
 │   │   ├── login
 │   │   │   └── page.js
 │   │   └── signup
 │   │       └── page.js
 │   ├── components
 │   │   ├── Chat.js
-│   │   └── Navbar.js
+│   │   ├── FormFeedback.js
+│   │   ├── Navbar.js
+│   │   └── Toast.js
 │   ├── context
-│   │   └── AuthContext.js
+│   │   ├── AuthContext.js
+│   │   ├── CsrfContext.js
+│   │   └── ToastContext.js
 │   ├── favicon.ico
 │   ├── globals.css
 │   ├── layout.js
 │   ├── lib
 │   │   ├── bibleApi.js
+│   │   ├── csrf.js
 │   │   ├── firebase.js
-│   │   └── openaiApi.js
-│   └── page.js
+│   │   ├── openaiApi.js
+│   │   └── rateLimiting.js
+│   ├── page.js
+│   ├── styles
+│   │   ├── README.md
+│   │   ├── auth.module.css
+│   │   ├── base.css
+│   │   ├── chat.module.css
+│   │   ├── footer.module.css
+│   │   ├── hero.module.css
+│   │   ├── navbar.module.css
+│   │   └── profile.module.css
+│   └── utils
+│       └── validateForms.js
 ├── eslint.config.mjs
+├── jest.setup.js
 ├── jsconfig.json
 ├── next.config.mjs
 ├── package-lock.json
 ├── package.json
 ├── postcss.config.mjs
+├── project tree L4.txt
 └── public
     ├── file.svg
     ├── globe.svg
@@ -35,3 +66,5 @@
     ├── next.svg
     ├── vercel.svg
     └── window.svg
+
+19 directories, 49 files
